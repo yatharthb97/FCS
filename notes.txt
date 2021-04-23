@@ -1,0 +1,11 @@
+Serial.begin() is optional on Teensy. USB hardware initialization is performed before setup() runs.
+The baud rate input is ignored, and only used for Arduino compatibility. USB serial communication always occurs at full USB speed. However, see the baud() function below.
+
+Serial.begin() may wait up to 2.5 seconds for USB serial communication to be ready. For fastest program startup, simply do not use this unnecessary function. Its only purpose is for compatibility with programs written for Arduino. The delay is intended for programs which do not test the Serial boolean.
+
+
+Serial.write()
+Transmit a byte. You can also use Serial.write(buffer, length) to send more than one byte at a time, for very fast and efficient data transmission.
+
+
+If a timer supports automatic reloading, it will often make this a software-selectable feature. To distinguish between a count that will not repeat automatically and one that will, the hardware is said to be in one of two modes: one-shot or periodic. The mode is generally controlled by a field in the timer's control register.Input capture.
