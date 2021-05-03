@@ -52,7 +52,7 @@ COMdefault = "COM8" #do - OS Specific Port default
 graphtitle = 'Autocorrelation - Update '
 BaudRate = 19200 #Set Accordingly
 session_name = "Test"
-channel_width = 64
+channel_width = 264
 
 serialarray = [0]*channel_width
 frameno = 0
@@ -198,7 +198,7 @@ plt.savefig(session_name.join('.png'), bbox_inches='tight')
 
 #Close port
 s_port.close()
-
+input()
 
 #HTML Video display#####################################
 # equivalent to rcParams['animation.html'] = 'html5'

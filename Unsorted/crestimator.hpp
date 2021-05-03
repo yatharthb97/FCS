@@ -17,17 +17,17 @@ public:
  		scale = 1.0/max;
  	}
 
- 	void inline push(int ni) __attribute__((always_inline));
+ 	void inline push(int ni)
  	{
  		count_rate += ni * scale;
  	}
 
- 	float estimate() __attribute__((always_inline));
+ 	float estimate()
  	{
  		return count_rate;
  	}
 
- 	float estimatesq() __attribute__((always_inline));
+ 	float estimatesq()
  	{
  		return count_rate * count_rate;
  	}

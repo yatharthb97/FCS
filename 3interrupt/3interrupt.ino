@@ -1,6 +1,8 @@
 //Or use any other library
-//#include "TeensyTimerTool.h"
-//using namespace TeensyTimerTool;
+//TimerOne & TimerThree Libraries
+
+#include ".\TeensyTimerTool\src\TeensyTimerTool.h"
+using namespace TeensyTimerTool;
 
 
 ////// Global Variables
@@ -53,6 +55,10 @@ const unsigned int ErrorLEDPin2 = 0;
 const unsigned int ErrorLEDPin3 = 0;
 ////////////////////////////////////-----------------------------------------
 
+
+//OneShotTimer  timer1(GPT1); // next free channel of TMR1 (up to 4)
+
+
 //1
 void setup()
 {
@@ -68,8 +74,7 @@ void setup()
   
 
 	//1.3 Setup Timers
-	//OneShotTimer  timer1(TMR1); // next free channel of TMR1 (up to 4)
-	//timer1.begin(ISR_Close); //Timer 1 evokes ISR_Close()
+	//Empty
 
 	//1.4 Attach Interrupt to Pins
 	attachInterrupt(digitalPinToInterrupt(SyncPin), ISR_Open, RISING);
@@ -95,6 +100,7 @@ void loop()
     
 		TimerFlag = false;       //Unset the flag
 		//timer1.trigger(Tsample); // trigger the timer with Tsample delay
+    //timer1.begin(ISR_Close); //Timer 1 evokes ISR_Close()
 
     //Attach Pin Interrupt
     attachInterrupt(digitalPinToInterrupt(PulsePin), ISR_Pulse, RISING);
@@ -104,8 +110,8 @@ void loop()
 	// Print Channel at regular intervals
 	if(SerialCounter >= FCS_SERIAL_COUNTER_MAX)
 	{
-		SerialCounter = 0;
-		SerialOutChannel();
+		SerialCounter = 0;  //Set Serial Counter to Zero
+		SerialOutChannel(); //Call SerialOutChannel() function
 	}
 
 } //End of loop()
