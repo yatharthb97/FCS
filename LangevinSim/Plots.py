@@ -58,19 +58,32 @@ D_Sep = ','
 
 parent_path = sys.argv[1]
 edge = float(sys.argv[2])
+edge = edge/2
 frames = int(sys.argv[3])
 ob_radius = float(sys.argv[4])
 part_nums = int(sys.argv[5])
-
+avg_interval = int(100)
 
 #Print First Plot
+print(parent_path, '\n');
+print(sys.argv)
 statfile = 'stats.dat'
 statfilename = os.path.join(parent_path, statfile);
 
-t, msd = np.loadtxt(statfilename, delimiter = ',', unpack = True)
+t, msd, invol, flash = np.loadtxt(statfilename, delimiter = ',', unpack = True)
+
+#Length Checks for all arrays or convert to dataframe
+
+
+coef = np.polyfit(t,msd,1) #Fit polynomial of degree 1
+poly1d_fn = np.poly1d(coef) #Returns polynomial function
+# poly1d_fn is now a function which takes in x and returns an estimate for y
+
+plt.plot(t,msd, '-', t, poly1d_fn(t), '--k')
+
 
 # plotting the points 
-plt.plot(t, msd)
+#plt.plot(t, msd)
    
 # naming the x axis
 plt.xlabel('time')
@@ -78,7 +91,7 @@ plt.xlabel('time')
 plt.ylabel('MSD')
   
 # giving a title to my graph
-plt.title('MSD Plot')
+plt.title('MSD Plot - Slope → {0}'.format(coef[0]))
 
 figname = os.path.join(parent_path, 'plot.png')
 plt.savefig(figname)
@@ -87,11 +100,43 @@ plt.savefig(figname)
 plt.show()
 # function to show the plot
 
+#Define autocorrelation function
+def autocorr(x):
+    result = np.correlate(x, x, mode='full')
+    return result[int(result.size/2):]
+
+#Average out flash bool values
+temp = len(flash)
+print("Length of Time Signal: {0}".format(temp))
+avg_size = int(temp)/int(avg_interval)
+print("Averaging for every {0} points".format(avg_interval))
+print("Length of time series: {0}".format(avg_size))
+
+
+#Calculate array avg
+avg = np.zeros(int(avg_size), dtype=float);
+start = 0
+end = avg_interval
+for i in range(int(avg_size)):
+  avg[i] = np.sum(flash[start:end])
+  start = start + avg_interval
+  end = end + avg_interval
+
+autocy = autocorr(avg)
+autocx = np.arange(len(autocy))
+plt.plot(autocx, autocy, '-',)
+plt.xlabel('k')
+plt.ylabel('G(k)')
+plt.title('Autocorrelation Plot')
+
+figname = os.path.join(parent_path, 'autocorr.png')
+plt.savefig(figname)
 
 
 
 
-########################## 3 D Position Plots ################################3
+
+########################## 3 D Position Plots ################################
 
 
 
@@ -100,6 +145,8 @@ xdata = np.empty(part_nums)
 ydata = np.empty(part_nums)
 zdata = np.empty(part_nums)
 cdata = np.empty(part_nums)
+isinvol = np.empty(part_nums)
+isflash = np.empty(part_nums)
 
 #Create 3D Plot
 fig2 = plt.figure()
@@ -124,8 +171,8 @@ ax2.set_title('Position Plots')
 ax2.view_init(25, 10)
 
 
-
-
+#0 - NotinVol - Invol, 2
+#cmapx = {0:"purple", 1: "blue",3: "yellow"  }
 
 #5. SerialRead Function ########################
 
@@ -142,12 +189,12 @@ def graph_update(i):
   #    if (os.path.exists(filename) == False)
   #      sleep(0.005)
   #    else
-  xdata, ydata, zdata, cdata  = np.genfromtxt(filename, delimiter = ",", unpack = True)
+  xdata, ydata, zdata, isinvol, isflash  = np.genfromtxt(filename, delimiter = ",", unpack = True)
   # Get Your Data From txt based file
-
+  cdata = cdata = isinvol + isflash
   ax2.clear()
   ax2.set_title(str(i))
-
+  
   ax2.set_xlim3d([-edge, edge])
   ax2.set_xlabel('X')
 
@@ -156,7 +203,8 @@ def graph_update(i):
 
   ax2.set_zlim3d([-edge, edge])
   ax2.set_zlabel('Z')
-
+  #plt.imshow(2, cmap='gray', aspect=2)
+  
   ax2.scatter3D(xdata, ydata, zdata, c=cdata);
   #readlag = True
         #print(serialarray)
