@@ -119,7 +119,7 @@ msd_fit_fn = np.poly1d(coef)
 # msd_fit_fn is now a function which takes in x and returns an estimate for y
 
 #3.2 Print Polynomial Fit 
-print(f"\n• MSD Polynomial Fit: {msd_fit_fn}")
+print(f"\n• MSD Polynomial Fit → degree - {msd_fit_deg}: {msd_fit_fn}")
 
 #3.3 Plot MSD Graph ------------------------------------
 if do_MSD_Fit == True:
@@ -190,7 +190,7 @@ acf_x = np.arange(lags+1)
 #4.4 ACF Curve Fitting
 acf_coef = np.polyfit(acf_x, acf_y, acf_fit_deg) #Fit polynomial of degree 1
 acf_fit_fn = np.poly1d(acf_coef) 
-print(f"\n• ACF Polynomial Fit: \n{acf_fit_fn}") #Print ACF Fit Polynomial
+print(f"\n• ACF Polynomial Fit → degree - {acf_fit_deg}: \n{acf_fit_fn}") #Print ACF Fit Polynomial
 
 #popt, pcov = curve_fit(GaussianFit, xdata, ydata)
 

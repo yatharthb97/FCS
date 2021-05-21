@@ -8,9 +8,9 @@ Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
 
 ## Some Important Points:
 
-•   *Uniform Spherical Mode* does not use PSF based probablity scaling. (Just Laser Pulse and Quantum Yield).
-• *Uniform Spherical Mode* also ignores the Structure Factor arguement (sf) passed to the Veff Object.
-• For *Uniform Spherical Mode* "PSF Exponents" and "PSF Normalization" are both set to zero.
+	•*Uniform Spherical Mode* does not use PSF based probablity scaling. (Just Laser Pulse and Quantum Yield).
+	• *Uniform Spherical Mode* also ignores the Structure Factor arguement (sf) passed to the Veff Object.
+	• For *Uniform Spherical Mode* "PSF Exponents" and "PSF Normalization" are both set to zero.
 
 
 
@@ -32,9 +32,9 @@ Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
 
 ## Update Scheme
 
->	part.pos.x += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
->   part.pos.y += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
->  	part.pos.z += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
+	>	part.pos.x += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
+	>   part.pos.y += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
+	>  	part.pos.z += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
 
 
 ## Issues: 
