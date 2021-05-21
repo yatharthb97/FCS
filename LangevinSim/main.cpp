@@ -3,9 +3,6 @@
 #include "langsim.hpp" //Single File Interface
 
 
-//TODO → Take care of this
-//int LangevinBox::boxcounter = -1;
-
 int main()
 {
 	
@@ -37,12 +34,10 @@ int main()
 	box.Evolve();
 
 
-///////////////////// END --------------------------><
+///////////////////// Test Features --------------------------><
 
 	//3. Scale Units --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 	//Units units(/*sigma*/1.0, /*epsilon*/1.0, /*mass*/1.0, /*Viscosity*/CONST_WATER_VISCOSITY);
-
-	//6. CleanUpSession() [[place_holder]]
 }
 
 
