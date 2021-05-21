@@ -147,7 +147,7 @@ public:
 		return seed_list;
 	}
 
-	unsigned int FirstSeed()
+	unsigned int FirstSeed() const
 	{
 		if(seed_list.size() > 0)
 			return seed_list[0];

@@ -2,11 +2,23 @@
 # coding: utf-8
 
 
+
+#TODO
+# • Add Legends and Labels to graphs
+# • ACF Fit Block
+# •
+
 #1. Import Block ########################################################
 
+# This block makes sure that the packages that are not present
+# are installed during the first ever execution of the program.
+# For Actual Code → Line No :  TODO
+
+#1.1 Must Import
 import sys
 import os
-#
+
+
 #matplotlib Lib Check -------------------------------------------------------
 try:
   import matplotlib.pyplot as plt
@@ -33,211 +45,291 @@ except ImportError:
 #import animation ---------------------------------------------------------
 from matplotlib import animation
 from mpl_toolkits import mplot3d
+plt.style.use('seaborn-darkgrid')
+
+#TODO -> Check for these libraries too
+import statsmodels.api as sm
+#from scipy import curve_fit
+import math
+import json
+import datetime
 #--------------------------------------------------------------------------
-#
-print("Import Complete")
-
-
-##############################################################################
 
 
 
-#2. Global Variables ###################################
-D_Sep = ','
+#2. Parameter Setting ###################################
 
 
-#Receive environemt from args
+#2.1 Receive environemt from args
 #ARG0 - Scriptname
-#ARG1 - ParentPath
-#ARG2 - EDGE
-#ARG3 - totalrames
-#ARG4 - OBx.min
-#ARG5 - OBx.max
-#ARG6 - OBy.min
-#ARG7 - OBz.max
+parent_path = sys.argv[1] #ParentPath
 
-parent_path = sys.argv[1]
-edge = float(sys.argv[2])
-edge = edge/2
-frames = int(sys.argv[3])
-ob_radius = float(sys.argv[4])
-part_nums = int(sys.argv[5])
-avg_interval = int(100)
+# Set if the script is called independently or by C++ Simulator → "C++"
+if len(sys.argv) > 2:
+  operation_mode = sys.argv[2]
+else:
+  operation_mode = "Manual"
 
-#Print First Plot
-print(parent_path, '\n');
-print(sys.argv)
-statfile = 'stats.dat'
-statfilename = os.path.join(parent_path, statfile);
-
-t, msd, invol, flash = np.loadtxt(statfilename, delimiter = ',', unpack = True)
-
-#Length Checks for all arrays or convert to dataframe
+#Print Parent Path and Operation Mode
+print(f"• Parent Path: {parent_path} | Operation Mode: {operation_mode}");
 
 
-coef = np.polyfit(t,msd,1) #Fit polynomial of degree 1
-poly1d_fn = np.poly1d(coef) #Returns polynomial function
-# poly1d_fn is now a function which takes in x and returns an estimate for y
+#2.2 Open JSON config file
+jsonname = os.path.join(parent_path, 'config.json')
+with open(jsonname) as json_file:
+    param = json.load(json_file)
 
-plt.plot(t,msd, '-', t, poly1d_fn(t), '--k')
+
+#2.3 Misc Parameter Declarations
+
+do_MSD_Fit = True
+do_ACF_Fit = True
+msd_fit_deg = 1
+acf_fit_deg = 1
+
+bin_size = int(100)
+lags = 256
+param['Edge'] = param['Edge']/2 #TODO Specifiy why it is necessary
+###################################
+
+#--- Setup is complete.
 
 
-# plotting the points 
-#plt.plot(t, msd)
+#2. Load stats file
+statfilename = os.path.join(parent_path, 'stats.dat');
+
+t, msd, invol, og_flash = np.loadtxt(statfilename, delimiter = param['D_Sep'], unpack = True)
+
+flash = invol #Set flash as invol TODO !!!
+
+# --------------  3.0 -------------
+# /$$      /$$  /$$$$$$  /$$$$$$$ 
+#| $$$    /$$$ /$$__  $$| $$__  $$
+#| $$$$  /$$$$| $$  \__/| $$  \ $$
+#| $$ $$/$$ $$|  $$$$$$ | $$  | $$
+#| $$  $$$| $$ \____  $$| $$  | $$
+#| $$\  $ | $$ /$$  \ $$| $$  | $$
+#| $$ \/  | $$|  $$$$$$/| $$$$$$$/
+#|__/     |__/ \______/ |_______/ 
+
+
+#3.1 MSD Polynomial fit
+coef = np.polyfit(t, msd, msd_fit_deg) #Fit polynomial of degree 1
+msd_fit_fn = np.poly1d(coef) 
+# msd_fit_fn is now a function which takes in x and returns an estimate for y
+
+#3.2 Print Polynomial Fit 
+print(f"\n• MSD Polynomial Fit: {msd_fit_fn}")
+
+#3.3 Plot MSD Graph ------------------------------------
+if do_MSD_Fit == True:
+  plt.title(f'MSD Plot - Slope → {coef[0]}')
+  plt.plot(t, msd, '-',label = 'data')
+  plt.plot(t, msd_fit_fn(t), '--k', label = 'fit')
+  plt.legend()
+
+else: #Do not add Fitting curve
+  print("-> MSD Fitting is disabled.")
+  plt.title('MSD Plot')
+  plt.plot(t, msd, '-', label = 'data')
+  plt.legend()
    
 # naming the x axis
 plt.xlabel('time')
 # naming the y axis
 plt.ylabel('MSD')
-  
-# giving a title to my graph
-plt.title('MSD Plot - Slope → {0}'.format(coef[0]))
 
-figname = os.path.join(parent_path, 'plot.png')
-plt.savefig(figname)
+#3.4 Save Plot
+msdfigname = os.path.join(parent_path, 'msdplot.png')
+plt.savefig(msdfigname)
+
+# 3.5 Open Live Plot
+if param['show_py_plots'] == True:
+  plt.show()
+# ---------------------------------------------------
+
+## ------------  4.0 ---------
+#  /$$$$$$   /$$$$$$  /$$$$$$$$
+# /$$__  $$ /$$__  $$| $$_____/
+#| $$  \ $$| $$  \__/| $$      
+#| $$$$$$$$| $$      | $$$$$   
+#| $$__  $$| $$      | $$__/   
+#| $$  | $$| $$    $$| $$      
+#| $$  | $$|  $$$$$$/| $$      
+#|__/  |__/ \______/ |__/      
+                              
+                              
+                              
+#4.1 Calculation of Array Sizes Average out flash bool values
+tseries_size = np.size(flash)
+binned_ts_size = int(tseries_size/bin_size)
+
+# 4.2 Print Essential Statistics
+stat_txt = f"""
+• Length of Time Series: {tseries_size}
+• Number of flashes(total): {int(np.sum(flash))}
+• Number of invols(total): {int(np.sum(invol))}
+• Bin Size: {bin_size}
+• Length of Binned Time Series: {int(binned_ts_size)}"""
+print(stat_txt)
 
 
-plt.show()
-# function to show the plot
 
-#Define autocorrelation function
-def autocorr(x):
-    result = np.correlate(x, x, mode='full')
-    return result[int(result.size/2):]
-
-#Average out flash bool values
-temp = len(flash)
-print("Length of Time Signal: {0}".format(temp))
-avg_size = int(temp)/int(avg_interval)
-print("Averaging for every {0} points".format(avg_interval))
-print("Length of time series: {0}".format(avg_size))
+#4.3 Time Series Binning
+binned_ts = np.copy(flash) #Make a Copy of flash
+binned_ts = np.reshape(binned_ts, newshape=(binned_ts_size, bin_size))
+binned_ts = np.sum(binned_ts, axis=1) #Sum along the row
 
 
-#Calculate array avg
-avg = np.zeros(int(avg_size), dtype=float);
-start = 0
-end = avg_interval
-for i in range(int(avg_size)):
-  avg[i] = np.sum(flash[start:end])
-  start = start + avg_interval
-  end = end + avg_interval
 
-autocy = autocorr(avg)
-autocx = np.arange(len(autocy))
-plt.plot(autocx, autocy, '-',)
-plt.xlabel('k')
-plt.ylabel('G(k)')
-plt.title('Autocorrelation Plot')
+#4.3 Calculation of ACF
+acf_y = sm.tsa.acf(binned_ts, nlags=lags, fft=False)
+acf_x = np.arange(lags+1)
 
+
+#4.4 ACF Curve Fitting
+acf_coef = np.polyfit(acf_x, acf_y, acf_fit_deg) #Fit polynomial of degree 1
+acf_fit_fn = np.poly1d(acf_coef) 
+print(f"\n• ACF Polynomial Fit: \n{acf_fit_fn}") #Print ACF Fit Polynomial
+
+#popt, pcov = curve_fit(GaussianFit, xdata, ydata)
+
+#4.5 Plot MSD Graph ------------------------------------
+
+plt.xscale("log")
+plt.xlabel(r'$log_{e}(k)$ → lag')
+plt.ylabel(r'$G(k)$ → ACF')
+
+if do_ACF_Fit == True:
+  plt.title('Autocorrelation Plot')
+  plt.plot(acf_x, acf_y, '-', label = 'data')
+  plt.plot(acf_x, acf_fit_fn(acf_x), '--k', label = 'fit')
+  plt.legend()
+
+else: #Do not add Fitting curve
+  print("-> ACF Fitting is disabled.")
+  plt.title('Autocorrelation Plot')
+  plt.plot(acf_x, acf_y, '-', label = 'data')
+  plt.legend()
+
+#4.6 Save ACF Plot
 figname = os.path.join(parent_path, 'autocorr.png')
 plt.savefig(figname)
 
+#4.7 Open Live Plot
+if param['show_py_plots'] == True:
+  plt.show()
 
 
 
+########################## 5.0 3 D Position Plots ################################
 
-########################## 3 D Position Plots ################################
+# /$$$$$$$                           /$$$$$$$  /$$             /$$    
+#| $$__  $$                         | $$__  $$| $$            | $$    
+#| $$  \ $$ /$$$$$$   /$$$$$$$      | $$  \ $$| $$  /$$$$$$  /$$$$$$  
+#| $$$$$$$//$$__  $$ /$$_____/      | $$$$$$$/| $$ /$$__  $$|_  $$_/  
+#| $$____/| $$  \ $$|  $$$$$$       | $$____/ | $$| $$  \ $$  | $$    
+#| $$     | $$  | $$ \____  $$      | $$      | $$| $$  | $$  | $$ /$$
+#| $$     |  $$$$$$/ /$$$$$$$/      | $$      | $$|  $$$$$$/  |  $$$$/
+#|__/      \______/ |_______/       |__/      |__/ \______/    \___/  
 
+#Enabled by a toggle                                                             
+if param['do_pos_plots'] == True:
 
-
-#Declare Arrays
-xdata = np.empty(part_nums)
-ydata = np.empty(part_nums)
-zdata = np.empty(part_nums)
-cdata = np.empty(part_nums)
-isinvol = np.empty(part_nums)
-isflash = np.empty(part_nums)
-
-#Create 3D Plot
-fig2 = plt.figure()
-#ax = p3.Axes3D(fig)
-ax2 = plt.axes(projection='3d')
-ax2.scatter3D(xdata, ydata, zdata, c=cdata);
+    #5.0 Set Style to default
+    plt.rcParams.update(plt.rcParamsDefault)
 
 
-# Setting the axes properties
-ax2.set_xlim3d([-edge, edge])
-ax2.set_xlabel('X')
+    #5.1 Declare Arrays
+    xdata = np.empty(param['Part_no'])
+    ydata = np.empty(param['Part_no'])
+    zdata = np.empty(param['Part_no'])
+    cdata = np.empty(param['Part_no'])
+    isinvol = np.empty(param['Part_no'])
+    isflash = np.empty(param['Part_no'])
 
-ax2.set_ylim3d([-edge, edge])
-ax2.set_ylabel('Y')
-
-ax2.set_zlim3d([-edge, edge])
-ax2.set_zlabel('Z')
-
-ax2.set_title('Position Plots')
-
-# Provide starting angle for the view.
-ax2.view_init(25, 10)
+    #5.2 Create 3D Plot - init
+    fig_pos = plt.figure()
+    ax3d = plt.axes(projection='3d')
+    ax3d.scatter3D(xdata, ydata, zdata, c=cdata);
 
 
-#0 - NotinVol - Invol, 2
-#cmapx = {0:"purple", 1: "blue",3: "yellow"  }
+    #5.3 Setting the axes properties
+    ax3d.set_xlim3d([-param['Edge'], param['Edge']])
+    ax3d.set_xlabel('X')
 
-#5. SerialRead Function ########################
+    ax3d.set_ylim3d([-param['Edge'], param['Edge']])
+    ax3d.set_ylabel('Y')
 
-def graph_update(i):       
-  #Read from the s_port
+    ax3d.set_zlim3d([-param['Edge'], param['Edge']])
+    ax3d.set_zlabel('Z')
 
-  file = str(i)
-  file += ".dat"
+    #5.4 Set Title
+    ax3d.set_title('Position Plots')
 
-  filename = os.path.join(parent_path, file);
-  #print(filename)
-  #readflag = false;
-  #while(readflag == False):
-  #    if (os.path.exists(filename) == False)
-  #      sleep(0.005)
-  #    else
-  xdata, ydata, zdata, isinvol, isflash  = np.genfromtxt(filename, delimiter = ",", unpack = True)
-  # Get Your Data From txt based file
-  cdata = cdata = isinvol + isflash
-  ax2.clear()
-  ax2.set_title(str(i))
+    #5.5 Provide starting angle for the view.
+    ax3d.view_init(25, 10)
+
+
+    #5.6 graph_update function ########################
+    def graph_update(i):
+      # Get Data from file
+      file = str(i)
+      file += ".dat"
+      filename = os.path.join(parent_path, file);
+      xdata, ydata, zdata, isinvol, isflash  = np.genfromtxt(filename, delimiter = ",", unpack = True)
+
+      cdata = isinvol + isflash #Set Colordata
+
+      #TODO
+      colordict = {
+                     0: "purple",
+                     1: "Mustang",
+                     2: "yellow"
+                  }
+
+      ax3d.clear()
+      ax3d.set_title(f'Position Plot → {str(i)}')
+      
+      ax3d.set_xlim3d([-param['Edge'], param['Edge']])
+      ax3d.set_xlabel('X')
+
+      ax3d.set_ylim3d([-param['Edge'], param['Edge']])
+      ax3d.set_ylabel('Y')
+
+      ax3d.set_zlim3d([-param['Edge'], param['Edge']])
+      ax3d.set_zlabel('Z')
+      
+      ax3d.scatter3D(xdata, ydata, zdata, c=cdata);
+    ##################################### End of graph_update()
+
+
+    #5.7. Animation Section
+    #-- TODO if show_plot is false, do a quick render ? (This takes 0.5*(frames+1)*2 seconds)
+    print("••• Plot animation begins...")
+    ani = animation.FuncAnimation(fig_pos, graph_update, frames = np.arange(0, param['FrameExports']+1),
+                                  blit = False, repeat = False, interval = 500) 
   
-  ax2.set_xlim3d([-edge, edge])
-  ax2.set_xlabel('X')
+    #5.7.1 → Show animation plots
+    if param['show_py_plots'] == True:
+      plt.show()
+   
+    print("••• Plot animation ends...")
+    #---
 
-  ax2.set_ylim3d([-edge, edge])
-  ax2.set_ylabel('Y')
+    #5.8 Save the last snapshot
+    lastplotname = os.path.join(parent_path, 'last_plot.png')
+    plt.savefig(lastplotname)
 
-  ax2.set_zlim3d([-edge, edge])
-  ax2.set_zlabel('Z')
-  #plt.imshow(2, cmap='gray', aspect=2)
-  
-  ax2.scatter3D(xdata, ydata, zdata, c=cdata);
-  #readlag = True
-        #print(serialarray)
-#End of SerialRead()
+    #5.9 Save the animation
+    vidname = os.path.join(parent_path, 'posplots.mp4')
+    ani.save(vidname)
 
-#########################################################
+else:
+  print(f"-> Positon Plots are disabled.")
 
-
-#8. Animation Section
-
-
-
-print("Plot begins...")
-#--
-ani = animation.FuncAnimation(fig2, graph_update, frames = np.arange(0,frames+1), blit = False, repeat = False, interval = 500) 
-
-#plt.savefig(figname2)
-plt.show()
-#---
-print("Plot ends...")
-
-
-#Save the last snapshot
-figname2 = os.path.join(parent_path, 'posplot.png')
-plt.savefig(figname2)
-#plt.savefig(session_name.join('.png'), bbox_inches='tight')
-#pylab leaves a generous, often undesirable, whitespace around the image → 'tight'
-
-#Save the animation
-vidname = os.path.join(parent_path, 'pos.mp4')
-ani.save(vidname)
-
-
-
-
+#6.0 Print Exit Message
+now = datetime.datetime.now()
+dt_str = now.strftime("%d-%m-%Y %H:%M:%S")
+print(f"Script exited successfully: {dt_str}")
 

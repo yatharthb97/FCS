@@ -3,63 +3,133 @@
 
 #include <fstream>
 #include<sstream>
-#include <cmath>
-#include <random>
 #include<iomanip>
-#include<string>
-#include<vector>
-#include<cstdint>
 #include <iostream>
-#include <stdlib.h>
-
+#include <cmath>
+#include <vector>
 #include "macros.hpp"
-#include "particle.hpp"
-#include "./submodules/vector.hpp"
-#include "./submodules/random.hpp"
+
 #include "./submodules/filesystem.hpp"
 //#include "./submodules/timer.hpp"
 
-//Type declarations
-//using partlist_t = std::vector<Particle>;
-//using unsigned long int = std::uint64_t;
-//using  enum_int_t = int;
 
 
-/*class OBVol //Observation Volume
+class Laser
 {
 public:
-  double radius;
-  double radius_sq;
 
-  //Default Constructor
-  OBVol(const double radius): radius(radius), radius_sq(radius*radius)
+  ulint_t CharDecayTime;
+  ulint_t PulseFrequency;
+
+  //Constructor
+  Laser(ulint_t PulseFrequency, ulint_t CharDecayTime) : PulseFrequency(PulseFrequency), CharDecayTime(CharDecayTime)
   {}
-}; //End of class OBVol*/
 
+  double prob(const ulint_t &simcounter) const
+  {
+      double elapsed_time = double(simcounter % PulseFrequency)*-1;
+                      
+                      //! - This is a negative exponential
+      return std::exp((elapsed_time)/double(CharDecayTime));
+  } //End of LaserPulseProb
+
+}; //End of class Laser
+
+class SimClock
+{
+public:
+
+  ulint_t MaxSteps;
+  double StepSize;
+
+  //Constructor
+  SimClock(ulint_t MaxSteps, double StepSize) : MaxSteps(MaxSteps), StepSize(StepSize)
+  {}
+
+}; //End of class SimClock
+
+
+class Veff
+{
+public:
+  double radius; //-----------> radius is in reduced units.
+  double sf; //---------------> sf: Structure Factor for z-axis is dimensionless.
+  double vol; //--------------> volume of the PSF saved.
+
+  //static std::string type =  "3DGauss-xySymmetric"; //Polymorphic identification ?
+
+  Veff(double radius, double sf) : radius(radius), sf(sf)
+  {}
+
+  Veff(double sf) : sf(sf), radius(0.0)
+  {} // Use with the function below ↓
+
+  double set_real_radius(double &real_radius)
+  {
+      this->radius = real_radius /*/ unit_conversion TODO*/;
+  }
+
+  double vol_gauss()
+  {
+      this->vol = CONST_PI_pow3by2 * radius * radius *  radius * sf;
+      return vol;
+
+  }
+
+  double vol_sphere()
+  {
+    this->vol = 4/3*CONST_PI * radius * radius * radius;
+    return vol;
+  }
+
+}; //End of class Veff
+
+//Wrapper for all the stringstream objects → Single Interface
 class Datapipe
 {
     
 public:
 
     std::ostringstream stats;
+    std::ostringstream tag;
 
     Datapipe()
     {
       stats << std::setprecision(FCS_FLOAT_PRECISION);
-    }
+
+
+      #if FCS_PART_TAGGING == 1
+      tag << std::setprecision(FCS_FLOAT_PRECISION);
+      #endif
+
+    } // End of Datapipe()
 
     bool inline Flush(const std::string &parentpath)
     {
+
       bool errnox = false;
       if(!parentpath.empty())
       {
-        errnox = WriteToFile(std::string(parentpath + "stats.dat"), stats.str());
-      }
-      return errnox;
-    }
+        errnox = WriteToFile(std::string(parentpath + AddExt("stats")), stats.str());
 
+
+        #if FCS_PART_TAGGING == 1
+        errnox && WriteToFile(std::string(parentpath + AddExt("tag")), tag.str());
+        #endif
+      }
+
+      return errnox;
+
+    } //End of Flush()
 
 private:
+
+
+  std::string AddExt(std::string str)
+  {
+    str.append(FCS_DATAFILE_EXT);
+    return str;
+  }
   
   bool inline WriteToFile(std::string path, const std::string &content)
   {
@@ -78,252 +148,142 @@ private:
 
 }; //End of class Datapipe
 
-class LangevinBox
+
+
+
+/*//What are the inpts? → Scale units, Viscosity of medium
+class LangevinUnits
 {
-public:
-
-	//Member Functions
-	int BoxID = 0;
-
-
-	double Edge;          //Edge of the box
-	double Rho;           //Number Density
-	unsigned long int Part_no;      //Number of particles in the box
-  unsigned long int T_stepsMax;   //Total Number of Steps Performed
-  unsigned long int FrameExports; //Number of Frames to be saved
-  double dt;            //Smallest Incremented Timestep
-  double MSD = 0;       //MSD Value for the entire evolution
-  unsigned long int SimCounter = 0;
-  int dim = 3;
-  //Vector of Particles
-  std::vector<Particle> partlist;
-
-  //Observation Volume
-  //OBVol Obvol(1.0); //Radius is 1.0
-
-  //PRNG Resources
-	MT_RND rnd; //MT PRNG
-	std::uniform_real_distribution<double> u_dist; // Uniform dist
-  std::normal_distribution<double> gauss_dist; // Normal dist. for Langevin
-
-  //Datapipe
-  Datapipe datapipe;
-
-  //Paths
-  std::string box_path;
-  std::string session_name; //TODO
+  
+  //SI Constants → Would not change during the simulation
+  double Viscosity = CONST_WATER_VISCOSITY; //Medium is the same
 
 
-  	LangevinBox(double Rho, unsigned int Part_no, int FrameExports, std::string session_name): Rho(Rho), Part_no(Part_no), FrameExports(FrameExports), session_name(session_name)
-  	{
-  		
-      //Edge and parameter setting
-      Edge = std::cbrt(Part_no/Rho);
-      T_stepsMax = 1e5;
-      dt = 1e-3;
-      
+  double T = 273.0; //Temperatur is the same
+  constexpr double kbT = T*CONST_Kb;
+  constexpr double Beta = 1/kbT;
 
-      //Call Box Init
-  		this->Init();
+//////////////////////////////////////////////////////////////
 
-  	}
-
-  	void Init()
-  	{
-  		
-      //BoxPath Creation
-      using namespace FileSystem;
-      std::string path = FCS_GPARENT_PATH;
-      //SlashIt(path);
-      //path.append(session_name);
-      //SlashIt(path);
-      //path.append(std::tostring(BoxID));
-
-      box_path = MakePrimaryNode(path, session_name); //Reserve Directory
-      std::cout << box_path << std::endl;
+//Declared Simulation Scale & Parameters
+  double sigma = 1e-8;
+  double epsilon = 10;
+  double mass = 1;
+  std::string time_mode = "brownian";
 
 
-
-      //1. Prepare RND Generator
-  		rnd.NewSeeds(); //Seed PRNG
-  		rnd.Discard();  //Warm Up Generator
-
-      //Reset the distribution parameters
-      u_dist.param(std::uniform_real_distribution<double>::param_type(0.0, 1.0));
-      gauss_dist.param(std::normal_distribution<double>::param_type(0.0, 1.0));
-
-  		//2. Particle Init
-  		partlist.reserve(Part_no);
-
-  		for(int i = 0; i < Part_no; i++)
-  		{
-  			//Particle(unsigned int partid, V &pos)
-        V posx(rndPosition(), rndPosition(), rndPosition());
-        partlist.emplace_back(i, posx);
-  		}
-
-      //Write 0th frame
-      WriteFrame(partlist, 0);
+//Derived SI constants
+  double NRho = 0.0
+  double D = 0.0;
+  double Gamma = 0.0;
+  double TDT = 0.0; //Translational Damping Time
+  double time = 0.0;
 
 
-  	} //End of Init()
+  //1/KBT
+
+  //Brownian Time (time for a particle to diffuse the square of its diameter) → sigma*sigma/6*D
+  //Translational Damping Time
+  //LJ Time
 
 
-  	double rndPosition()
-  	{
-  		#if FCS_SYMMETRIC_BOX == 1
-  			return Edge*(0.5 - u_dist(rnd.engine)); //Symmetric Box
-  		#elif FCS_SYMMETRIC_BOX == 0
-  			return Edge*u_dist(rnd.engine); //Assymetric Box
-  		#endif
-
-  	} //End of rndPosition()
-
-
-    void PBC(V &pos)
-    {
-      
-      #if FCS_SYMMETRIC_BOX == 1
-        pos.x -= Edge*rint(pos.x/Edge);
-        pos.y -= Edge*rint(pos.y/Edge);
-        pos.z -= Edge*rint(pos.z/Edge);
-      #elif FCS_SYMMETRIC_BOX == 0
-        pos.x = (pos.x > Edge)*(pos.x - Edge) + (pos.x < 0)*(Edge + pos.x);
-        pos.y = (pos.y > Edge)*(pos.y - Edge) + (pos.y < 0)*(Edge + pos.y);
-        pos.z = (pos.z > Edge)*(pos.z - Edge) + (pos.z < 0)*(Edge + pos.z);
-      #endif
-
-    } //End of PBC()
-
-
-
-
-    void Evolve() //Do Evolution of Box
-    {
-      
-      const unsigned long int outerloop =  (FrameExports > 0)*FrameExports + (FrameExports == 0)*1;
-      const unsigned long int innerloop = T_stepsMax/outerloop;
-
-      for(unsigned long int j = 0; j < outerloop; j++) //Outer Loop
+  //epsilon, mass, sigma → 1
+  LangevinUnits(double sigma, double epsilon, double mass) : sigma(sigma), epsilon(epsilon), mass(mass)
+  {
+      if(time_mode != "brownian" || time_mode != "LJ")
       {
-
-          for(unsigned long int i = 0; i < innerloop; i++) //Inner Loop
-          {
-            //For One Time Step ↓        
-
-            //0
-            SimCounter++; //Increment Simulation SimCounter
-
-            //1 <x^2> = 2*d*D*t = 4*D*t
-            //Move All particles
-            for(auto &part : partlist)   //sqrt(4*i.D*dt)*gauss_dist(mt);
-            {
-              part.pos.x += std::sqrt(2*dim*part.D*dt)*gauss_dist(rnd.engine); //4*D*time_step*WhiteNoise
-              part.pos.y += std::sqrt(2*dim*part.D*dt)*gauss_dist(rnd.engine);
-              part.pos.y += std::sqrt(2*dim*part.D*dt)*gauss_dist(rnd.engine);
-
-              //PBC(part.pos);
-            }
-
-            //2
-            //Count the number of particles in the observation Volume & MSD Calculation
-            unsigned int InVolCount = 0; //Counts the number of particles in the OB Volume
-            unsigned int FlashCount = 0; //Counts the number of partilces that flashed in the instant
-            double MSDi = 0;
-            for(auto &part : partlist) 
-            {
-              
-              //MSD Calc
-              V msd_vec = part.pos - part.init_pos;
-              //PBC(msd_vec);
-              MSDi += msd_vec.size_sq();
-
-              //Check if the particle is in the observation Volume
-              if(part.pos.size_sq() <= 1.0) 
-              {
-                  //Set InVol flag
-                  part.InVol = true;
-                  InVolCount++;
-                    
-                  // Try flashing with set probability
-                  if(u_dist(rnd.engine) < part.e_prob) 
-                  {
-                      part.last_flash = i;
-                      FlashCount++;
-                  }
-              }
-
-              else
-                part.InVol = false;
-            }
-
-            //3
-            //Normalizations & DataPipeIn
-            MSD += (MSDi)/double(Part_no); //Total MSD count per particle
-            datapipe.stats << double(SimCounter)*dt << FCS_DSep << MSD/double(SimCounter)/* << FCS_DSep 
-                          //Elapsed Time         //Normed MSD
-
-                           << InVolCount << FCS_DSep << FlashCount */<< '\n';
-                          //Particles InVol            //Particles that Flashed
-
-          } //End of Inner Evolution Loop
+        //Error
+        exit(-1);
+      }
+  }
 
 
-          //One FrameExport
-          WriteFrame(partlist, j+1);
-
-      } //End of Outer Evolution Loop
-
-      
-
-      datapipe.Flush(box_path);
-
-      // parent_path = sys.argv[1]
-      // edge = float(sys.argv[2])
-      // frames = int(sys.argv[3])
-      // ob_radius = float(sys.argv[4])
-      //part_nums = int(sys.argv[5])
-
-
-      std::ostringstream command;
-      command << "python3  Plots.py  \"" << box_path << "\"  " << Edge << "  " << FrameExports << "  " << 1.00 << "  " << Part_no;  
-      system(command.str().c_str());
-
-    } //End of Evolve()
+  getEnergy()
+  {
+    return rT * T * Kb;
+  }
 
 
 
-    //Saves the dat file of the box snapshot
-    void WriteFrame(std::vector<Particle> &partlist_t, unsigned long int frameid)
-    {
-      std::ostringstream buffer;
-      buffer << std::setprecision(FCS_FLOAT_PRECISION);
+  getMRho()
+  {
+    return 
+  }
 
 
-      unsigned int sizex = partlist.size();
-      for(unsigned int i = 0; i < sizex; i++) 
+  getTime()
+  {
+      if(time_mode == "brownian")
       {
-        buffer /*<< i << FCS_DSep*/ << partlist[i].pos.info(FCS_DSep) << FCS_DSep
-              //Partid             //Position
-               << partlist[i].InVol << '\n';
-                  //InVol (bool)
+        return sigma*sigma / (6.0 * rD * D);
       }
 
-
-      std::string filename = box_path;
-      FileSystem::SlashIt(box_path);
-      filename.append(std::to_string(frameid));
-      filename.append(".dat");
-
-      std::ofstream file(filename, std::ios::out); //Write to file
-      file << buffer.str();  //Open File
-      file.close();  //Close File
-    } // End of FrameExport()
+      else //LJ
+      {
+          return sigma*std::sqrt(mass*rmass/epsilon);
+      }
+  }
 
 
+  getTranslationalDampingTime()
+  {
+    std::sqrt(mass*rmass*sigma*sigma/epsilon);
+  }
+
+  //getters
+  //get_rMr
 
 
 
 
 
-}; //End of class LangevinBox
+
+  double realMassFactor()
+  {
+    return Gamma*Gamma*sigma*sigma*Beta;
+  }
+
+  double realTimeFactor()
+  {
+    return Gamma*sigma*sigma*Beta;
+  }
+
+
+  double realForceFactor()
+  {
+    return kb*T/sigma;
+  }
+
+  double realDiffusivityFactor()
+  {
+    return Kb * T / Gamma;
+  }
+
+  double realDiffTimescaleFator()
+  {
+      return sigma*sigma*Beta;
+  }
+
+  //For Spherical Particles
+  double realMonomerDensityFactor()
+  {
+      return realMassFactor()*rMass/(CONST_PI*sigma*sigma*sigma);
+  }
+
+  double realNRhoFactor()
+  {
+    return 1/(sigma*sigma*sigma);
+  }
+
+  double realViscosityFactor()
+  {
+    return Gamma/(3.0*CONST_PI*sigma);
+  }
+
+
+  Gamma = 3*CONST_PI*Viscosity*sigma;
+
+};*/
+
+
+

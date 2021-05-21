@@ -644,6 +644,27 @@ public:
     {
         return this->z;
     } //End of z()
+
+
+    //! Accessor for component -> x squared.
+    double __attribute__((always_inline)) X_sq() const
+    {
+        return this->x*this->x;
+    } //End of X_sq()
+
+    //39
+    //! Accessor for component -> y squared.
+    double __attribute__((always_inline)) Y_sq() const
+    {
+        return this->y*this->y;
+    } //End of Y_sq()
+
+    //40
+    //! Accessor for component -> z squared.
+    double __attribute__((always_inline)) Z_sq() const
+    {
+        return this->z*this->z;
+    } //End of Z_sq()
 //-------------------- COMPONENT ACCESSORS --------------------------------------------------
 
    /*
@@ -973,6 +994,27 @@ public:
         //Vector triple product: A x (B x C) = B * A•C - C * A•B
         return (B * (A.dot(C))) - (C * A.dot(B));
     } // End of vector_tri_prod()
+
+
+//Scalar functions
+    inline void setscalar(double scalar)
+    {
+        this->x = scalar;
+        this->y = 0.0;
+        this->z = 0.0;
+    }
+
+    inline bool is_scalar() const
+    {
+        return std::fabs(this->x) > V::tolerance && 
+               std::fabs(this->y) < V::tolerance && 
+               std::fabs(this->y) < V::tolerance;
+    }
+
+    inline double getscalar() const
+    {
+        return X();
+    }
 
     //How to represent Infinitesimal Vector?
 

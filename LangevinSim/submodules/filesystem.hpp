@@ -28,6 +28,7 @@
 #pragma once
 
 #include <fstream>
+#include <sstream>
 #include <sys/stat.h>
 
 namespace FileSystem
@@ -104,7 +105,7 @@ namespace FileSystem
 
 
 
-
+	//Returns a slashed path
 	std::string MakePrimaryNode(std::string &parentpath, std::string &node_name)
 	{
 		
