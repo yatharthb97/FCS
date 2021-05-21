@@ -8,9 +8,9 @@ Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
 
 ## Some Important Points:
 
-	•*Uniform Spherical Mode* does not use PSF based probablity scaling. (Just Laser Pulse and Quantum Yield).
-	• *Uniform Spherical Mode* also ignores the Structure Factor arguement (sf) passed to the Veff Object.
-	• For *Uniform Spherical Mode* "PSF Exponents" and "PSF Normalization" are both set to zero.
+	• **Uniform Spherical Mode** does not use PSF based probablity scaling. (Just Laser Pulse and Quantum Yield).
+	• **Uniform Spherical Mode** also ignores the Structure Factor arguement (sf) passed to the Veff Object.
+	• For **Uniform Spherical Mode** "PSF Exponents" and "PSF Normalization" are both set to zero.
 
 
 
@@ -24,7 +24,7 @@ Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
 > ./langsim
 
 
-##Python Plot can be manually called by:
+## Python Plot can be manually called by:
 
 > ./Plots.py <path_to_box_directory>
 
