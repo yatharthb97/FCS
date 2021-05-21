@@ -1,17 +1,12 @@
 
 # Langvin Simulation Code
 
-
-
-
-
-
-
+Code for Langevin Simulation of an FCS Setup
 
 Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
 
 
-Some Important Points:
+## Some Important Points:
 
 •   *Uniform Spherical Mode* does not use PSF based probablity scaling. (Just Laser Pulse and Quantum Yield).
 • *Uniform Spherical Mode* also ignores the Structure Factor arguement (sf) passed to the Veff Object.
