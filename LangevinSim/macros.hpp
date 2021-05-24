@@ -22,10 +22,11 @@ using enum_int_t = std::uint_fast8_t; // Enum integer type
 //3. Symmetric/Assymmetric Box → Enable Symmetric Box
 #define FCS_SYMMETRIC_BOX 1
 
+//4. Enable or disable PBC → 0 is disabled
+#define FCS_ENABLE_PBC 1
 
-
-//4. Enable Particle Tagging for a single particle defined by FCS_TAG_PARTID 
-#define FCS_PART_TAGGING 0
+//4. []Enable Particle Tagging for a single particle defined by FCS_TAG_PARTID 
+#define FCS_PART_TAGGING 0 //[[depreciated]]
 #define FCS_TAG_PARTID 0
 
 
