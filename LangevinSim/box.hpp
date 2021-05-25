@@ -41,7 +41,7 @@ public:
 
   //1. Set Box Configuration
   int BoxID = 0;//-------------------------------> Unique ID Assigned to the Box
-  //static int dim = 3;//-------------------------> dimensions of system
+  unsigned int dimensions = 3;//-----------------> dimensions of system
 
 
   //2. Extern Objects
@@ -66,6 +66,7 @@ public:
   //5. Observation Volume
   V AD_Radius;//--------------> Bounds for Veff
   V AD_PSF;//-----------------> Exponents for PSF - precalculated
+  V PSF_centre;//-------------> Centre of PSF (Only relevent for Assymetric Box)
   double PSF_Norm = 1.0;//----------> Normalization for PSF function
 
   //6. PRNG Resources
@@ -179,7 +180,7 @@ public:
       gauss_dist.param(std::normal_distribution<double>::param_type(0.0, 1.0));
 
       //3.3 Set up Observation Volume → Given Radius and Structure Factor
-  	#if FCS_VEFF_GAUSSIAN == 1 //Block that defined a *3D Gaussian* Veff
+  	#if FCS_VEFF_ELLIPSOID == 1 //Block that defined a *3D Gaussian* Veff
 
   		//Equivalent to {2/(rx^2), 2/(ry^2), 2/(rz^2)} in the PSF Expression
   		AD_PSF.x = 2/(veff.radius*veff.radius);
@@ -192,11 +193,16 @@ public:
 
  		veff.vol_gauss(); // Set appropriate volume → Ignored Return Value
 
-  	#elif FCS_VEFF_GAUSSIAN == 0 //Block that defines a *Spherical* Veff
+  	#elif FCS_VEFF_ELLIPSOID == 0 //Block that defines a *Spherical* Veff
   		AD_PSF.setscalar(veff.radius); //Treat as scalar
   		AD_Radius = V(veff.radius, veff.radius, veff.radius);
 
   		veff.vol_sphere(); // Set appropriate volume → Ignored Return Value
+  	#endif
+
+
+  	#if FCS_SYMMETRIC_BOX == 0 //Assymetric Box
+  		PSF_centre = V(Edge/2, Edge/2, Edge);
   	#endif
 
   		//3.4 Particle Init
@@ -286,11 +292,13 @@ public:
             //<x^2> = 2*dim*D*dt = 4*D*t
             for(auto &part : this->partlist)   //sqrt(4*i.D*dt)*gauss_dist(mt);
             {
-              part.pos.x += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
-              part.pos.y += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
-              part.pos.z += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.x += std::sqrt(4*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.y += std::sqrt(4*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.z += std::sqrt(4*part.D*dt)*gauss_dist(rnd.engine);
 
-              PBC(part.pos);
+              #if FCS_ENABLE_PBC == 1
+              	PBC(part.pos);
+              #endif
             } //End of minor loop
 
             //6.3.2
@@ -303,17 +311,14 @@ public:
               
               //...1 MSD Calc
               V msd_vec = part.pos - part.init_pos;
-              PBC(msd_vec); //TODO → Ask if this is strictly necessary
+              #if FCS_ENABLE_PBC == 1
+              	PBC(msd_vec); //TODO → Ask if this is strictly necessary
+              #endif 
+
               MSDi += msd_vec.size_sq();
 
               //...2 Check if the particle is in the observation Volume (2 different if statements)
-            #if FCS_VEFF_GAUSSIAN == 0 //Spherical Assumption → Assume Sphere of dia AD_Radius.X()
-              if(part.pos.size_sq() <= AD_Radius.size_sq()) 
-            #elif FCS_VEFF_GAUSSIAN == 1 //Assume 3D Gausssian Observation Volume
-              if(part.pos.X() <= AD_Radius.X() &&
-              	 part.pos.Y() <= AD_Radius.Y() &&
-              	 part.pos.Z() <= AD_Radius.Z())
-            #endif //FCS_VEFF_GAUSSIAN
+              if(Invol_Check(part.pos))
               {
                   //Set InVol flag TODO -> Test Necessacity
                   part.InVol = true;
@@ -372,14 +377,35 @@ public:
 
     } //End of Evolve()
 
+    bool __attribute__((always_inline)) Invol_Check(const V &pos)
+    {
+    	#if (FCS_VEFF_ELLIPSOID == 0) && (FCS_SYMMETRIC_BOX == 1) //Spherical and Symmetric
+    		return pos.size_sq() < veff.radius_sq;
+    	#elif (FCS_VEFF_ELLIPSOID == 0) && (FCS_SYMMETRIC_BOX == 0) //Spherical and Asymmetric
+    		V check = pos - PSF_centre;
+    		return check.size_sq() < veff.radius_sq;
+    	#elif (FCS_VEFF_ELLIPSOID == 1) && (FCS_SYMMETRIC_BOX == 1) //Ellipsoid and Symmetric
+    		V check = pos;
+    		check.comp_divide(AD_Radius);
+    		return check.size_sq() < 1.0;
+    	#elif (FCS_VEFF_ELLIPSOID == 1) && (FCS_SYMMETRIC_BOX == 0) //Ellipsoid and Asymmetric
+    		V check = pos - PSF_centre;
+    		check.comp_divide(AD_Radius);
+    		return check.size_sq() < 1.0;
+    	#else
+    		std::cerr << "[FATAL ERROR] Invalid State:" << __LINE__ << __FILE__ << '\n';
+    	#endif
 
+
+
+    }
 
     double PulseProbablity(const Particle &part) const
     {
       //Probablity is the product of all the seperate probablities
-	    #if FCS_VEFF_GAUSSIAN == 1 //Gaussian
+	    #if FCS_VEFF_ELLIPSOID == 1 //Gaussian
 	      return part.qm_yield * PSF(part.pos) * laser.prob(SimCounter);
-	    #elif FCS_VEFF_GAUSSIAN == 0 //Spherical
+	    #elif FCS_VEFF_ELLIPSOID == 0 //Spherical
 	      return part.qm_yield * laser.prob(SimCounter);
 	    #endif
 
@@ -453,6 +479,10 @@ public:
     	config["do_pos_plots"] = gl::do_pos_plots ;
     	config["show_py_plots"] = gl::show_py_plots;
 
+
+    	config["veff_radius"] = veff.radius;
+    	config["veff_sf"] = veff.sf;
+
     	//Note that char types are not automatically converted to JSON strings, but to integer numbers. A conversion to a string must be specified explicitly (source: library docs)
     	config["D_Sep"] = std::string(1, FCS_DSep);//---------------------->6
 
@@ -482,11 +512,11 @@ public:
 
     	//Declare if Symmetric Box and if Gaussian PSF
     	buffer << " • Box Symmetric: " << (FCS_SYMMETRIC_BOX == 1) << " | PSF Type: "
-    		   << (FCS_VEFF_GAUSSIAN == 1 ? "3D Gaussian" : "Uniform Spherical") << '\n';
+    		   << (FCS_VEFF_ELLIPSOID == 1 ? "Ellipsoid - 3D Gaussian" : "Uniform Spherical") << '\n';
 
     	buffer << "\n< Veff Statistics >\n"; //VEFF
     	buffer << " • xy-Radius: " << veff.radius << " | Structure Factor: " << veff.sf << "\n";
-    	buffer << " • Volume of Veff: " << veff.vol << " | Bound Radius: " << AD_Radius << '\n';
+    	buffer << " • Volume of Veff: " << veff.vol << " | Veff Radii(x,y,z): " << AD_Radius << '\n';
     	buffer << " • PSF Exponents: " << AD_PSF << " | PSF Normalization: " << PSF_Norm << '\n';
     	
     	buffer << "\n< Laser Statistics >\n"; //LASER
