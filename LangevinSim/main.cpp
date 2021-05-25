@@ -6,7 +6,6 @@
 int main()
 {
 	
-
 	
 	//0. Specify HomePath(that should exist) → Optional
 	HomePath("/mnt/m/code/FCS/Results/");
@@ -21,14 +20,14 @@ int main()
 	Laser laser(10, 5); //Pulse Every 10 dt, char decay time is 5 dt
 
 	//4. Create Veff Object → Veff(radius, structure_factor)
-	Veff veff(1.0, 2.0);
+	Veff veff(5.0, 1.0);
 
 	//5. Create Box Object → LangevinBox(Rho, Part_no, FrameExports, simclock, laser, veff)
 	int write_frames = 100;
-	double Rho = 0.2;
-	int Part_no = 50;
+	double Rho = 0.005;
+	int Part_no = 100;
+	gl::do_pos_plots = true;
 	LangevinBox box(Rho, Part_no, write_frames, simclock, laser, veff);
-
 
 	//6. Evolve Box → Run Box
 	box.Evolve();

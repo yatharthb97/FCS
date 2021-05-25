@@ -84,6 +84,9 @@ namespace gl
 			exit(-1);
 		}
 
+		//TEST FEATURE
+		std::cout << "\n[MODE] Periodic Boundary Conditions -> " << std::boolalpha << bool(FCS_ENABLE_PBC) << std::endl;
+
 		gl::session_declared = true;
 
 	} //End of function NewSession()
