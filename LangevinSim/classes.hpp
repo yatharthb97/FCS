@@ -53,12 +53,13 @@ class Veff
 {
 public:
   double radius; //-----------> radius is in reduced units.
+  double radius_sq;//---------> radius squared in reduced units.
   double sf; //---------------> sf: Structure Factor for z-axis is dimensionless.
   double vol; //--------------> volume of the PSF saved.
 
   //static std::string type =  "3DGauss-xySymmetric"; //Polymorphic identification ?
 
-  Veff(double radius, double sf) : radius(radius), sf(sf)
+  Veff(double radius, double sf) : radius(radius), radius_sq(radius*radius), sf(sf)
   {}
 
   Veff(double sf) : sf(sf), radius(0.0)
