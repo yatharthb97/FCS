@@ -29,13 +29,14 @@ using enum_int_t = std::uint_fast8_t; // Enum integer type
 #define FCS_PART_TAGGING 0 //[[depreciated]]
 #define FCS_TAG_PARTID 0
 
+#define FCS_PER_PART_STATS 1
 
 //5. Extension for data files
 #define FCS_DATAFILE_EXT ".dat"
 
 
 //6. Use Gaussian Veff instead of Spherical Veff
-#define FCS_VEFF_GAUSSIAN 1
+#define FCS_VEFF_ELLIPSOID 0
 
 
 //7. Allow Bleaching Mode
