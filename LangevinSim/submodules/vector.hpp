@@ -1016,7 +1016,20 @@ public:
         return X();
     }
 
+    
+    inline void comp_divide(const V &other)
+    {
+        this->x /= other.x;
+        this->y /= other.y;
+        this->z /= other.z;
+    }
+
+
+
     //How to represent Infinitesimal Vector?
+
+
+
 
 
     //Multi Vector Operations
