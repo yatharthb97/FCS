@@ -39,3 +39,6 @@ Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
 
 ## Issues: 
 	• "last_plot.png" is not getting rendered in python. Output is blank white image.
+    • FCS_PER_PART_STATS is not implemented. Only variables are defined.
+    • Particle::last_flash is initalized to zero (unsigned int). So for 0th frame, all particles flash.
+    • Box Assymmetry mode is curently incompatible with python pos plot module and data fits
