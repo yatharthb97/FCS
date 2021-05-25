@@ -20,12 +20,13 @@ int main()
 	Laser laser(10, 5); //Pulse Every 10 dt, char decay time is 5 dt
 
 	//4. Create Veff Object → Veff(radius, structure_factor)
-	Veff veff(5.0, 1.0);
+	Veff veff(2.0, 2.5);
 
 	//5. Create Box Object → LangevinBox(Rho, Part_no, FrameExports, simclock, laser, veff)
 	int write_frames = 100;
 	double Rho = 0.005;
-	int Part_no = 100;
+	int Part_no = 200;
+	
 	gl::do_pos_plots = true;
 	LangevinBox box(Rho, Part_no, write_frames, simclock, laser, veff);
 

@@ -36,7 +36,7 @@ using enum_int_t = std::uint_fast8_t; // Enum integer type
 
 
 //6. Use Gaussian Veff instead of Spherical Veff
-#define FCS_VEFF_ELLIPSOID 0
+#define FCS_VEFF_ELLIPSOID 1
 
 
 //7. Allow Bleaching Mode

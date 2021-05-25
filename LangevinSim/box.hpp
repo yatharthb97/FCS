@@ -41,7 +41,7 @@ public:
 
   //1. Set Box Configuration
   int BoxID = 0;//-------------------------------> Unique ID Assigned to the Box
-  unsigned int dimensions = 3;//-----------------> dimensions of system
+  unsigned int dim = 3;//------------------------> dimensions of system
 
 
   //2. Extern Objects
@@ -473,7 +473,8 @@ public:
     	config["Part_no"] = this->Part_no;//--------------->5
     	config["T_stepsMax"] = this->T_stepsMax;
     	config["dt"] = this->dt;
-
+      config["D"] = partlist[0].D; //!!!
+      config["dim"] = this->dim;
 
     	config["run_python"] = gl::run_python; //Specifies History → Unused [[unused]]
     	config["do_pos_plots"] = gl::do_pos_plots ;
@@ -485,7 +486,9 @@ public:
 
     	//Note that char types are not automatically converted to JSON strings, but to integer numbers. A conversion to a string must be specified explicitly (source: library docs)
     	config["D_Sep"] = std::string(1, FCS_DSep);//---------------------->6
-
+      
+      config["Symmetric Box"] = bool(FCS_SYMMETRIC_BOX);
+      config["PBC"] = bool(FCS_ENABLE_PBC);
     	
     	//Open(Create) File
     	std::string filename = parentpath;
