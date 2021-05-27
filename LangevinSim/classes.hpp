@@ -18,20 +18,66 @@ class Laser
 {
 public:
 
-  ulint_t CharDecayTime;
-  ulint_t PulseFrequency;
+  ulint_t CharDecayTime;  //Decay time for laser
+  ulint_t PulseTimePeriod; //Pulsing Time Period of laser
+  
+  double frequency; //Frequency of light wave
+  std::string color; //Color of laser
+  std::string mode = "always-on"; //Mode of operation → String val
+  bool pulsing = false; //Mode of operation is pulsing → bool val
+
 
   //Constructor
-  Laser(ulint_t PulseFrequency, ulint_t CharDecayTime) : PulseFrequency(PulseFrequency), CharDecayTime(CharDecayTime)
-  {}
-
-  double prob(const ulint_t &simcounter) const
+  Laser(ulint_t PulseTimePeriod, ulint_t CharDecayTime) : PulseTimePeriod(PulseTimePeriod), CharDecayTime(CharDecayTime)
   {
-      double elapsed_time = double(simcounter % PulseFrequency)*-1;
-                      
-                      //! - This is a negative exponential
-      return std::exp((elapsed_time)/double(CharDecayTime));
-  } //End of LaserPulseProb
+    this->mode = "pulsing";
+    pulsing = false;
+  }
+
+  //Mode Constructor
+  Laser(std::string mode)
+  {
+    if(mode == "always-on")
+    {
+      this->mode = mode;
+      pulsing = false;
+      this->CharDecayTime = std::numeric_limits<ulint_t>::max();
+      this->PulseTimePeriod = std::numeric_limits<ulint_t>::max();
+    }
+
+    else if(mode =="pulsing") //Set Default Values
+    { 
+        pulsing = true;
+        this->mode = mode;
+        this->CharDecayTime = 5;
+        this->PulseTimePeriod = 10;
+    }
+
+    else
+    {
+      std::cerr << "[ERROR] LASER → Invalid Mode of operation: " << mode << '\n';
+      std::cerr << "[•••••> LASER → Mode of operation is set : " << mode << '\n';
+
+      this->mode = "always-on";
+      this->pulsing = false;
+      this->CharDecayTime = std::numeric_limits<ulint_t>::max();
+      this->PulseTimePeriod = std::numeric_limits<ulint_t>::max();
+    }
+  } //End of Mode based Constructor
+
+  double Prob(const ulint_t &simcounter) const
+  {
+      if(pulsing)
+      {
+        double elapsed_time = double(simcounter % PulseTimePeriod)*-1;
+        return std::exp((elapsed_time)/double(CharDecayTime));
+                     //! - This is a negative exponential
+      }
+
+      else //always-on
+        return 1.0;
+
+  } //End of prob
 
 }; //End of class Laser
 
@@ -93,6 +139,8 @@ public:
 
     std::ostringstream stats;
     std::ostringstream tag;
+    std::ostringstream u_dist;
+    std::ostringstream gauss_dist;
 
     Datapipe()
     {
@@ -115,8 +163,16 @@ public:
 
 
         #if FCS_PART_TAGGING == 1
-        errnox && WriteToFile(std::string(parentpath + AddExt("tag")), tag.str());
+        errnox = errnox && WriteToFile(std::string(parentpath + AddExt("tag")), tag.str());
         #endif
+
+
+        #if FCS_RND_SAMPLING == 1
+        errnox = errnox && 
+                 WriteToFile(std::string(parentpath + AddExt("u_dist")), u_dist.str()) &&
+                 WriteToFile(std::string(parentpath + AddExt("gauss_dist")), gauss_dist.str());
+        #endif
+                          
       }
 
       return errnox;
