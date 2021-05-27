@@ -161,12 +161,12 @@ public:
 
   	  else
   	  	std::cerr << "[FATAL ERROR] Invalid State:" << __LINE__ << __FILE__ << '\n';
-  	//---------------
+  	
 
 
-      //3.2.1 Prepare RND Generator
+      //3.2.1 Prepare RND Generator ////////////////////////////////////////////
   	  rnd.NewSeeds(); //Seed PRNG
-  	  rnd.Discard();  //Warm Up Generator
+  	  rnd.Discard(1000000);  //Warm Up Generator
 
   	  std::string seedpath = box_path;
   	  seedpath.append("seeds");
@@ -174,10 +174,22 @@ public:
 
   	  rnd.SaveSeed(seedpath); //Save Seeds for the simulation
  
+      //////////////////////////////////////////////////////////////////////////
 
       //3.2.2 Reset the distribution parameters
       u_dist.param(std::uniform_real_distribution<double>::param_type(0.0, 1.0));
       gauss_dist.param(std::normal_distribution<double>::param_type(0.0, 1.0));
+
+
+      //3.2.3 Sampling if enabled
+      #if FCS_RND_SAMPLING == 1
+        for(unsigned int i = 0; i < 100000; i++)
+        {
+          datapipe.u_dist << u_dist(rnd.engine) << '\n';
+          datapipe.gauss_dist << gauss_dist(rnd.engine) << '\n';
+        }
+      #endif
+
 
       //3.3 Set up Observation Volume → Given Radius and Structure Factor
   	#if FCS_VEFF_ELLIPSOID == 1 //Block that defined a *3D Gaussian* Veff
@@ -202,7 +214,7 @@ public:
 
 
   	#if FCS_SYMMETRIC_BOX == 0 //Assymetric Box
-  		PSF_centre = V(Edge/2, Edge/2, Edge);
+  		PSF_centre = V(Edge/2, Edge/2, Edge/2);
   	#endif
 
   		//3.4 Particle Init
@@ -288,13 +300,13 @@ public:
             //6.3.0
             SimCounter++; //Increment Simulation SimCounter
 
-            //6.3.1 Move All particles
-            //<x^2> = 2*dim*D*dt = 4*D*t
+            //6.3.1 Move All particles   D = 3, dim = 3 2*dim*D = 2*3*3
+            //<x^2> = 2*dim*D*dt = 4*D*t  ==> 18*t = MSD =<r^2>
             for(auto &part : this->partlist)   //sqrt(4*i.D*dt)*gauss_dist(mt);
             {
-              part.pos.x += std::sqrt(4*part.D*dt)*gauss_dist(rnd.engine);
-              part.pos.y += std::sqrt(4*part.D*dt)*gauss_dist(rnd.engine);
-              part.pos.z += std::sqrt(4*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.x += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.y += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.z += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
 
               #if FCS_ENABLE_PBC == 1
               	PBC(part.pos);
@@ -340,6 +352,11 @@ public:
                 part.InVol = false; //TODO -> Test Necessacity
             } //End of minor loop
 
+            //Particle Tagging 
+            #if FCS_PART_TAGGING == 1
+              datapipe.tag << partlist[FCS_TAG_PARTID].pos.info(FCS_DSep) << '\n';
+            #endif //FCS_PART_TAGGING
+
             ////6.3.3
             //Normalizations & DataPipeIn
             MSD += (MSDi)/double(Part_no); //Total MSD count per particle
@@ -370,7 +387,7 @@ public:
       	//Launch python script TODO --> use a cleaner approach
       	std::ostringstream command;
       	command << "python3  Plots.py" << "  " //-----> Script Name
-      			<< this->box_path << "  " //----------> Box Path
+      			    << this->box_path << "  " //----------> Box Path
       	        << "C++";  //-------------------------> Operation Mode
       	system(command.str().c_str());
       }
@@ -379,22 +396,27 @@ public:
 
     bool __attribute__((always_inline)) Invol_Check(const V &pos)
     {
-    	#if (FCS_VEFF_ELLIPSOID == 0) && (FCS_SYMMETRIC_BOX == 1) //Spherical and Symmetric
-    		return pos.size_sq() < veff.radius_sq;
-    	#elif (FCS_VEFF_ELLIPSOID == 0) && (FCS_SYMMETRIC_BOX == 0) //Spherical and Asymmetric
-    		V check = pos - PSF_centre;
-    		return check.size_sq() < veff.radius_sq;
-    	#elif (FCS_VEFF_ELLIPSOID == 1) && (FCS_SYMMETRIC_BOX == 1) //Ellipsoid and Symmetric
-    		V check = pos;
-    		check.comp_divide(AD_Radius);
-    		return check.size_sq() < 1.0;
-    	#elif (FCS_VEFF_ELLIPSOID == 1) && (FCS_SYMMETRIC_BOX == 0) //Ellipsoid and Asymmetric
-    		V check = pos - PSF_centre;
-    		check.comp_divide(AD_Radius);
-    		return check.size_sq() < 1.0;
-    	#else
-    		std::cerr << "[FATAL ERROR] Invalid State:" << __LINE__ << __FILE__ << '\n';
-    	#endif
+    	
+      #if FCS_INVOL_CUTOFF == 1 //Enable InVol CutOff
+          #if (FCS_VEFF_ELLIPSOID == 0) && (FCS_SYMMETRIC_BOX == 1) //Spherical and Symmetric
+        		return pos.size_sq() < veff.radius_sq;
+        	#elif (FCS_VEFF_ELLIPSOID == 0) && (FCS_SYMMETRIC_BOX == 0) //Spherical and Asymmetric
+        		V check = pos - PSF_centre;
+        		return check.size_sq() < veff.radius_sq;
+        	#elif (FCS_VEFF_ELLIPSOID == 1) && (FCS_SYMMETRIC_BOX == 1) //Ellipsoid and Symmetric
+        		V check = pos;
+        		check.comp_divide(AD_Radius);
+        		return check.size_sq() < 1.0;
+        	#elif (FCS_VEFF_ELLIPSOID == 1) && (FCS_SYMMETRIC_BOX == 0) //Ellipsoid and Asymmetric
+        		V check = pos - PSF_centre;
+        		check.comp_divide(AD_Radius);
+        		return check.size_sq() < 1.0;
+        	#else
+        		std::cerr << "[FATAL ERROR] Invalid State:" << __LINE__ << __FILE__ << '\n';
+        	#endif
+      #elif FCS_INVOL_CUTOFF == 0 //All Particles can flash regardless of their position
+          return true;
+      #endif
 
 
 
@@ -404,7 +426,7 @@ public:
     {
       //Probablity is the product of all the seperate probablities
 	    #if FCS_VEFF_ELLIPSOID == 1 //Gaussian
-	      return part.qm_yield * PSF(part.pos) * laser.prob(SimCounter);
+	      return part.qm_yield * PSF(part.pos) * laser.Prob(SimCounter);
 	    #elif FCS_VEFF_ELLIPSOID == 0 //Spherical
 	      return part.qm_yield * laser.prob(SimCounter);
 	    #endif
@@ -489,6 +511,9 @@ public:
       
       config["Symmetric Box"] = bool(FCS_SYMMETRIC_BOX);
       config["PBC"] = bool(FCS_ENABLE_PBC);
+      config["Particle Tagging"] = bool(FCS_PART_TAGGING);
+      config["Tagged Part ID"] = FCS_TAG_PARTID;
+      config["Rnd Sampling"] =bool(FCS_RND_SAMPLING);
     	
     	//Open(Create) File
     	std::string filename = parentpath;
@@ -523,8 +548,8 @@ public:
     	buffer << " • PSF Exponents: " << AD_PSF << " | PSF Normalization: " << PSF_Norm << '\n';
     	
     	buffer << "\n< Laser Statistics >\n"; //LASER
-    	buffer << " • Pulsing Freq: " << laser.PulseFrequency << " | Char Decay Time: " <<  laser.CharDecayTime << '\n';
-
+    	buffer << " • Pulsing Time Period: " << laser.PulseTimePeriod << " | Char Decay Time: " <<  laser.CharDecayTime << '\n';
+      buffer << " • Pulsing Mode: " << laser.mode << '\n';
     	//---
     	buffer << "\n  -END OF PROFILE-\n";
 
