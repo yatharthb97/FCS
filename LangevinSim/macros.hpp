@@ -26,7 +26,7 @@ using enum_int_t = std::uint_fast8_t; // Enum integer type
 #define FCS_ENABLE_PBC 1
 
 //4. []Enable Particle Tagging for a single particle defined by FCS_TAG_PARTID 
-#define FCS_PART_TAGGING 0 //[[depreciated]]
+#define FCS_PART_TAGGING 0
 #define FCS_TAG_PARTID 0
 
 #define FCS_PER_PART_STATS 1
@@ -42,6 +42,11 @@ using enum_int_t = std::uint_fast8_t; // Enum integer type
 //7. Allow Bleaching Mode
 #define FCS_BLEACHING 0
 
+//8. Take a sample of random number distributions and get a corresponding plot
+#define FCS_RND_SAMPLING 0
+
+//Enabling would restrict particle flashing to the first ellipsoid (Airy Disc). Enable for Optimization.
+#define FCS_INVOL_CUTOFF 1 
 
 //8. Constants
 
