@@ -12,6 +12,8 @@ Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
 	• **Uniform Spherical Mode** also ignores the Structure Factor arguement (sf) passed to the Veff Object.
 	• For **Uniform Spherical Mode** "PSF Exponents" and "PSF Normalization" are both set to zero.
 
+    • FCS_RND_SAMPLING feature macro advances the state of the PRNG engine and distributions, so it will affect reporoducability in the current implementation.
+
 
 
 
