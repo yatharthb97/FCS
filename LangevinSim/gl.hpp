@@ -3,8 +3,9 @@
 #pragma once
 
 #include "macros.hpp"
-#include<iostream>
-#include<algorithm>
+#include <iostream>
+#include <algorithm>
+#include "modes.hpp"
 #include "./submodules/filesystem.hpp"
 
 
@@ -55,11 +56,22 @@ namespace gl
 	//Thread Safe → Used only once
 	void static NewSession(std::string session_name, std::string boxes_hint = "singlebox")
 	{
+		//Set Session Name
+		gl::session_name = session_name;
 		
+		//Print Welcome Message
 		std::cout << WelcomeMessage() << std::endl;
 
-		gl::session_name = session_name;
+		//Declare Modes and Conflicts
+		Modes::Declare("Periodic Boundary Conditions", FCS_SYMMETRIC_BOX); //1
+		Modes::Declare("Symmetric Box", FCS_ENABLE_PBC); //2
+		Modes::Declare("Veff → Ellipsoid", FCS_VEFF_ELLIPSOID); //3
+		Modes::Declare("InVolume Cutoff Optimization", FCS_INVOL_CUTOFF); //4
+		Modes::Declare("Random Sample Test", FCS_RND_SAMPLING); //5
+		
+		std::cout << "\n" << Modes::ModeCodePrint() << std::endl;
 
+		
 		//Guarentee that gl::homo_path exists
 		std::string path = gl::home_path;  //TODO → Check the asymptotic conditions for MakePrimaryNode
 		gl::session_path = FileSystem::MakePrimaryNode(path, session_name); //Reserve Directory
