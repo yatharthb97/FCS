@@ -51,6 +51,7 @@ public:
 
   //3. Box Configuration
   double Edge;//-------------------------> Edge of the box
+  double Vol;//--------------------------> Volume of Box
   double Rho;//--------------------------> Number Density
   unsigned long int Part_no;//-----------> Number of particles in the box
   unsigned long int T_stepsMax;//--------> Total Number of Steps Performed
@@ -105,8 +106,10 @@ public:
 
       //Edge and parameter setting
       this->Edge = std::cbrt(Part_no/Rho);
+      this->Vol = Edge*Edge*Edge;
       this->T_stepsMax = simclock.MaxSteps;
       this->dt = simclock.StepSize;
+
 
       //Call Box Init
   	  this->Init();
@@ -304,9 +307,9 @@ public:
             //<x^2> = 2*dim*D*dt = 4*D*t  ==> 18*t = MSD =<r^2>
             for(auto &part : this->partlist)   //sqrt(4*i.D*dt)*gauss_dist(mt);
             {
-              part.pos.x += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
-              part.pos.y += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
-              part.pos.z += std::sqrt(2*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.x += std::sqrt(2*dim*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.y += std::sqrt(2*dim*part.D*dt)*gauss_dist(rnd.engine);
+              part.pos.z += std::sqrt(2*dim*part.D*dt)*gauss_dist(rnd.engine);
 
               #if FCS_ENABLE_PBC == 1
               	PBC(part.pos);
@@ -414,8 +417,8 @@ public:
         	#else
         		std::cerr << "[FATAL ERROR] Invalid State:" << __LINE__ << __FILE__ << '\n';
         	#endif
-      #elif FCS_INVOL_CUTOFF == 0 //All Particles can flash regardless of their position
-          return true;
+      #elif  FCS_INVOL_CUTOFF  == 0 //All Particles can flash regardless of their position
+          return true; //Return true for all particles → Short Circuit
       #endif
 
 
@@ -535,21 +538,24 @@ public:
 
     	buffer << "\n< Box Statistics >\n"; //BOX
     	buffer << " • Box Edge: "<< Edge << " | No. Density: " << Rho << " | Particles: " << Part_no;
+      buffer << " • Box Volume: "<< this->Vol << '\n';
     	buffer << "\n • Total Steps: " << T_stepsMax << " | Step Size: " << dt << '\n';
-    	buffer << " • Position Frames Normalizations: " << FrameExports << "/" << T_stepsMax << '\n';
+    	buffer << " • Position Frame Export (Uniform): " << FrameExports << "/" << T_stepsMax << '\n';
 
     	//Declare if Symmetric Box and if Gaussian PSF
     	buffer << " • Box Symmetric: " << (FCS_SYMMETRIC_BOX == 1) << " | PSF Type: "
     		   << (FCS_VEFF_ELLIPSOID == 1 ? "Ellipsoid - 3D Gaussian" : "Uniform Spherical") << '\n';
 
     	buffer << "\n< Veff Statistics >\n"; //VEFF
+      buffer << " • Veff Volume/Box Volume: " << this->Vol/veff.vol << '\n';
+      buffer << " • Volume of Veff: " << veff.vol << " | Veff Radii(x,y,z): " << AD_Radius << '\n';
     	buffer << " • xy-Radius: " << veff.radius << " | Structure Factor: " << veff.sf << "\n";
-    	buffer << " • Volume of Veff: " << veff.vol << " | Veff Radii(x,y,z): " << AD_Radius << '\n';
     	buffer << " • PSF Exponents: " << AD_PSF << " | PSF Normalization: " << PSF_Norm << '\n';
     	
     	buffer << "\n< Laser Statistics >\n"; //LASER
-    	buffer << " • Pulsing Time Period: " << laser.PulseTimePeriod << " | Char Decay Time: " <<  laser.CharDecayTime << '\n';
       buffer << " • Pulsing Mode: " << laser.mode << '\n';
+    	buffer << " • Pulsing Time Period: " << laser.PulseTimePeriod << " | Char Decay Time: " <<  laser.CharDecayTime << '\n';
+     
     	//---
     	buffer << "\n  -END OF PROFILE-\n";
 
