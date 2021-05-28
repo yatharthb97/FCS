@@ -2,11 +2,10 @@
 
 #include "langsim.hpp" //Single File Interface
 
-
 int main()
 {
 	
-	
+
 	//0. Specify HomePath(that should exist) → Optional
 	HomePath("/mnt/m/code/FCS/Results/");
 
@@ -14,10 +13,10 @@ int main()
 	NewSession("Test", "singlebox");
 
 	//2. Create Simulation Clock Object → SimClock(MaxSteps, Step_Size)
-	SimClock simclock(1e5, 1e-5);
+	SimClock simclock(1e7, 1e-5);
 
 	//3. Create Laser Object → (pulse interval, char, decy time)
-	Laser laser(10, 5); //Pulse Every 10 dt, char decay time is 5 dt
+	Laser laser("always-on"); //Pulse Every 10 dt, char decay time is 5 dt
 
 	//4. Create Veff Object → Veff(radius, structure_factor)
 	Veff veff(2.0, 2.5);
