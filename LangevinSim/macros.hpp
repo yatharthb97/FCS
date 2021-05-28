@@ -12,43 +12,50 @@ using enum_int_t = std::uint_fast8_t; // Enum integer type
 
 //Macro Declarations
 
-//1. Data Seperator
+//A. Data Seperator
 #define FCS_DSep ','
 
-//2. Float Precision for writing files
+//B. Float Precision for writing files
 #define FCS_FLOAT_PRECISION	10
 #define FCS_FLOAT_SHORT_PRECISION 5
 
-//3. Symmetric/Assymmetric Box → Enable Symmetric Box
+//C. Extension for data files
+#define FCS_DATAFILE_EXT ".dat"
+
+//1. Symmetric/Assymmetric Box → Enable Symmetric Box
 #define FCS_SYMMETRIC_BOX 1
 
-//4. Enable or disable PBC → 0 is disabled
+//2. Enable or disable PBC → 0 is disabled
 #define FCS_ENABLE_PBC 1
 
-//4. []Enable Particle Tagging for a single particle defined by FCS_TAG_PARTID 
+//3. Use Gaussian Veff instead of Spherical Veff (Uniform Shphere Optimization)
+#define FCS_VEFF_ELLIPSOID 1
+
+//4. Enabling would restrict particle flashing to the first ellipsoid (Airy Disc). Enable for Optimization.
+#define FCS_INVOL_CUTOFF 1 
+
+//5. Take a sample of random number distributions and get a corresponding plot
+#define FCS_RND_SAMPLING 0
+
+//----> These Macro Features don't affect results of simulations
+
+//I. Enable Particle Tagging for a single particle defined by FCS_TAG_PARTID 
 #define FCS_PART_TAGGING 0
 #define FCS_TAG_PARTID 0
 
+//II. Calculate Extra Statistics for all particles
 #define FCS_PER_PART_STATS 1
 
-//5. Extension for data files
-#define FCS_DATAFILE_EXT ".dat"
 
+//-----> Extra Features → Yet to be implemented
 
-//6. Use Gaussian Veff instead of Spherical Veff
-#define FCS_VEFF_ELLIPSOID 1
-
-
-//7. Allow Bleaching Mode
+// Allow Bleaching Mode
 #define FCS_BLEACHING 0
 
-//8. Take a sample of random number distributions and get a corresponding plot
-#define FCS_RND_SAMPLING 0
 
-//Enabling would restrict particle flashing to the first ellipsoid (Airy Disc). Enable for Optimization.
-#define FCS_INVOL_CUTOFF 1 
 
-//8. Constants
+
+//Constants
 
 //PI values //////////////////////////////////////
 #define CONST_PI 3.14159265358979323846264338327950
