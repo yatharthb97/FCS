@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <limits>
 #include "macros.hpp"
 
 #include "./submodules/filesystem.hpp"
