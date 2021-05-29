@@ -15,8 +15,6 @@ Probablity of flashing = P(Laser Pulsing) * P(PSF) * P(Inherent Quantum Yield)
     • FCS_RND_SAMPLING feature macro advances the state of the PRNG engine and distributions, so it will affect reporoducability in the current implementation.
 
 
-
-
 ## Compile via:
 
 > g++ std=c++11 main.cpp -o langsim
