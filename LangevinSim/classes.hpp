@@ -214,36 +214,52 @@ class Units
 {
   
 /////////////////////////////////////////////////////////| Member List
- //Declared Simulation Scale & Parameters
+  
+  //Declared Simulation Scale & Parameters
   double Sigma = 1e-8;
   double Epsilon = 10;
-  double Mass = 1;
+  double Mass = 1.0;
 
-  double Time;
+  double Time = 1.0;
 
-  double Gamma = 0.0;
+  double Viscosity = CONST_WATER_VISCOSITY; //Medium is the same
+  double Gamma = 3 * CONST_PI * Viscosity * Sigma; //Gamma (Inverse of Mobility)
 
   //Derived From Epsilon ↓
   double T = 273.0; //Temperatur is the same
   double KBT = T*CONST_Kb; //Energy Scale of the Thermal Fluctuation
   double Beta = 1/KBT;
-
-  double Viscosity = CONST_WATER_VISCOSITY; //Medium is the same
-
   /////////////////////////////////////////////////////////| Member List
-  //Inputs → scales, T, Viscosity of medium
+  
 
 /////////////////////////////////////////////////////////| CONFIG
-  Units(double Sigma, double Epsilon, double Mass, double Viscosity) : Sigma(Sigma), Epsilon(Epsilon), Mass(Mass), Viscosity(Viscosity)
+  
+  //Blank Constructor
+  Units()
+  {}
+
+  ////Inputs → Sigma, Epsilon, Mass
+  void LJUnits(double Sigma, double Epsilon, double Mass)
   {
+      
+      this->Sigma = Sigma;
+      this->Epsilon = Epsilon;
+      this->Mass = Mass;
+
       //Set Epsilon based Attributes
       setEpsilon(Epsilon); //!!! Temperature is set twice, design choice
 
-      //Set Gamma (Inverse of Mobility)
-      this->Gamma = 3 * CONST_PI * Viscosity * Sigma;
-  }
+      //Gamma Is Unset
 
-  //Need Not Set Mass
+      /* USE ↓
+         Units lj;
+         lj.LJUnits(s,e,m)
+         lj.getLJ_TempFactor()
+         lj.getLJ_TDT()
+    
+      */
+  }
+  ////Inputs → Sigma, Epsilon, Viscosity
   Units(double Sigma, double Epsilon, double Viscosity) : Sigma(Sigma), Epsilon(Epsilon), Viscosity(Viscosity)
   {
       //Set Epsilon based Attributes → T
@@ -276,10 +292,10 @@ class Units
   
 
 /////////////////////////////////////////////////////////| LANG UNITS
-// Simulation Units Can be multiplied by the return values of the functions given below to get real SI units. ↓
+// Simulation Units Can be multiplied by the return values of the functions given below to get real SI units. ↓ "real" priffix
 
   //Check Again
-  double getBrownianTimeFactor() //time for a particle to diffuse the square of its diameter
+  double realBrownianTimeFactor() //time for a particle to diffuse the square of its diameter
   {
     return Sigma * Sigma / (6.0 * realDiffusivityFactor()); //(3D form)
   }
@@ -335,7 +351,8 @@ class Units
 
 
 
-  /////////////////////////////////////////////////////////| LJ UNITS
+/////////////////////////////////////////////////////////| LJ UNITS
+// "get" → Preffix
 
 
     double getLJ_TDT() //For Lennard Jones System
