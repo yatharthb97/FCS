@@ -44,7 +44,7 @@ namespace Modes{
 
     Modes::ClearTempBuffer();
     Modes::temp_buffer << std::boolalpha;
-    temp_buffer << "> MODE " << mode_counter << " ." << mode_str << " -> " << mode << '\n';
+    temp_buffer << "> MODE " << mode_counter << ". " << mode_str << " -> " << mode << '\n';
     
     main_buffer << temp_buffer.str();
     if(buffer_cout) //Set Output on screen

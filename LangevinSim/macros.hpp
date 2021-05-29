@@ -78,5 +78,5 @@ using enum_int_t = std::uint_fast8_t; // Enum integer type
 // Physical Constants ////////////////////////////////////////
 #define CONST_Avogadro 6.02214076e+23
 #define CONST_e 2.71828182845904523536028747
-#define CONST_Kb 1.38064900e−23
+#define CONST_Kb 1.38064900e-23
 #define CONST_WATER_VISCOSITY 0.000
