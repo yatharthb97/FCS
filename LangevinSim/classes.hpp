@@ -139,17 +139,37 @@ class Datapipe
 public:
 
     std::ostringstream stats;
-    std::ostringstream tag;
-    std::ostringstream u_dist;
-    std::ostringstream gauss_dist;
+    
+    #if FCS_PART_TAGGING == 1
+      std::ostringstream tag;
+    #endif
+
+    //distributions
+    #if FCS_RND_SAMPLING == 1
+      std::ostringstream u_dist;
+      std::ostringstream gauss_dist;
+    #endif
+
+    //Reference of all streams
+    std::vector <std::ostringstream *> pipelist;
+
 
     Datapipe()
     {
+      //stats
       stats << std::setprecision(FCS_FLOAT_PRECISION);
+      pipelist.emplace_back(&stats);
 
-
+      //tag
       #if FCS_PART_TAGGING == 1
-      tag << std::setprecision(FCS_FLOAT_PRECISION);
+        tag << std::setprecision(FCS_FLOAT_PRECISION);
+        pipelist.emplace_back(&tag);
+      #endif
+
+      //distributions
+      #if FCS_RND_SAMPLING == 1
+        pipelist.emplace_back(&u_dist);
+        pipelist.emplace_back(&gauss_dist);
       #endif
 
     } // End of Datapipe()
@@ -180,6 +200,17 @@ public:
 
     } //End of Flush()
 
+    //Clears all buffers
+    void ClearAll()
+    {
+        for(auto stream: pipelist)
+        {
+          stream->str(std::string()); //Set equivalent to string of zero length
+          stream->clear();  //Set error stateflags
+          stream->seekp(0); // for outputs: seek put ptr to start
+        }
+    }
+
 private:
 
 
@@ -205,172 +236,4 @@ private:
   }
 
 }; //End of class Datapipe
-
-
-
-
-//What are the inpts? → Scale units, Viscosity of medium
-class Units
-{
-  
-/////////////////////////////////////////////////////////| Member List
-  
-  //Declared Simulation Scale & Parameters
-  double Sigma = 1e-8;
-  double Epsilon = 10;
-  double Mass = 1.0;
-
-  double Time = 1.0;
-
-  double Viscosity = CONST_WATER_VISCOSITY; //Medium is the same
-  double Gamma = 3 * CONST_PI * Viscosity * Sigma; //Gamma (Inverse of Mobility)
-
-  //Derived From Epsilon ↓
-  double T = 273.0; //Temperatur is the same
-  double KBT = T*CONST_Kb; //Energy Scale of the Thermal Fluctuation
-  double Beta = 1/KBT;
-  /////////////////////////////////////////////////////////| Member List
-  
-
-/////////////////////////////////////////////////////////| CONFIG
-  
-  //Blank Constructor
-  Units()
-  {}
-
-  ////Inputs → Sigma, Epsilon, Mass
-  void LJUnits(double Sigma, double Epsilon, double Mass)
-  {
-      
-      this->Sigma = Sigma;
-      this->Epsilon = Epsilon;
-      this->Mass = Mass;
-
-      //Set Epsilon based Attributes
-      setEpsilon(Epsilon); //!!! Temperature is set twice, design choice
-
-      //Gamma Is Unset
-
-      /* USE ↓
-         Units lj;
-         lj.LJUnits(s,e,m)
-         lj.getLJ_TempFactor()
-         lj.getLJ_TDT()
-    
-      */
-  }
-  ////Inputs → Sigma, Epsilon, Viscosity
-  Units(double Sigma, double Epsilon, double Viscosity) : Sigma(Sigma), Epsilon(Epsilon), Viscosity(Viscosity)
-  {
-      //Set Epsilon based Attributes → T
-      setEpsilon(Epsilon); //!!! Temperature is set twice, design choice
-
-      //Set Gamma (Inverse of Mobility)
-      this->Gamma = 3 * CONST_PI * Viscosity * Sigma;
-
-      //Mass is implicitly set
-      this->Mass = realMassFactor()*1.0;
-
-      //Time is also implicitly set
-      this->Time = realTimeFactor()*1.0;
-  }
-
-  void setEpsilon(double epsilon)
-  {
-    this->KBT = epsilon;
-    this->T = epsilon/CONST_Kb;
-    this->Beta = 1/KBT;
-  }
-
-  void setTemp(double newT)
-  {
-    this->T = newT;
-    this->KBT = newT*CONST_Kb;
-    this->Beta = 1/KBT;
-  }
-  /////////////////////////////////////////////////////////| CONFIG
-  
-
-/////////////////////////////////////////////////////////| LANG UNITS
-// Simulation Units Can be multiplied by the return values of the functions given below to get real SI units. ↓ "real" priffix
-
-  //Check Again
-  double realBrownianTimeFactor() //time for a particle to diffuse the square of its diameter
-  {
-    return Sigma * Sigma / (6.0 * realDiffusivityFactor()); //(3D form)
-  }
-  
-  //OK
-  double realVolumeFactor()
-  {
-    return Sigma * Sigma * Sigma;
-  }
-
-  //OK
-  double realMassFactor()
-  {
-    return Gamma * Gamma * Sigma * Sigma * Beta;
-  }
-
-  //Ok
-  double realTimeFactor()
-  {
-    return Gamma * Sigma * Sigma * Beta;
-  }
-
-  //OK
-  double realForceFactor()
-  {
-    return KBT/Sigma;
-  }
-
-  //OK
-  double realViscosityFactor()
-  {
-    return Gamma / Sigma;
-  }
-
-  //OK
-  double realDiffusivityFactor()
-  {
-    return KBT / Gamma;
-  }
-
-  //OK
-  double realDiffTSFator()  //Diffusion Time Scale Factor
-  {
-    return Sigma * Sigma * Beta;
-  }
-
-  //For Spherical Particles Only
-  double realMonomerDensityFactor()
-  {
-      return realMassFactor() / realVolumeFactor();
-  }
-  /////////////////////////////////////////////////////////| LANG UNITS
-
-
-
-/////////////////////////////////////////////////////////| LJ UNITS
-// "get" → Preffix
-
-
-    double getLJ_TDT() //For Lennard Jones System
-    {
-      return Sigma * std::sqrt(Mass / Epsilon);
-    }
-
-
-    //OK
-    double getLJ_TempFactor() //For Lennard Jones
-    {
-      return KBT / Epsilon;
-    }
-  /////////////////////////////////////////////////////////| LJ UNITS
-
-}; //End of class Units
-
-//Notes:
-
-  //Brownian Time (time for a particle to diffuse the square of its diameter) → sigma*sigma/6*D
 
