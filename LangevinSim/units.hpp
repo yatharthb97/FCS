@@ -183,7 +183,7 @@ class Units
     }
 
 
-    //OK
+    //NOK
     double getLJ_TempFactor() //For Lennard Jones
     {
       return KBT / Epsilon;
@@ -201,27 +201,22 @@ class Units
 
 
 
-
-
-
-
-
 //Low Reynolds number regime
-namespace Environment
+/*namespace Environment
 {
 	
 	static std::string medium = "Fluid";
 	static bool lowReynoldsNo = true;
-	static double Viscosity;
-	static double Density;
+	static double Viscosity = 0.0;
+	static double Density = 0.0;
 	
 	double ReynoldsNo(double length, double velocity)
 	{
 		//Re = Lvρ/η
 		using Env = Environment;
-		return length*velocity*Env::Density*Env::Viscosity;
+		return length * velocity * Env::Density * Env::Viscosity;
 	}
-};
+};*/
 
 
 //One of the most striking aspect of low Reynolds number phenomena is that the speed of an object is solely determined by the forces acting on it at the moment.
