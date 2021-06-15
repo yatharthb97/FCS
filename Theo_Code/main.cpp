@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
   double samp_rsq = samp_r*samp_r; 
 
   // config params
-  int conf_save_interval = 1000000000000; //10^12
+  int conf_save_interval = 1000; //10^3
 
   // Initialize PRNG
   random_device rd;
@@ -116,13 +116,14 @@ int main(int argc, char** argv) {
     msd += (msd_it)/double(N);
     fthermo << it*dt << " " << msd/double(it+1) << " " << count << endl;
           //Time elapsed                     //No of "active flourophores"
+    
     // save config
     if(it % conf_save_interval == 0) {
       for(auto &i : particles) {
           fconf << i.r[0] << " " << i.r[1] << " " 
-                << ((i.last_flash_tstep-it)==0 ? 1 : 0) << endl;
-      }
-      fconf << endl << endl;
+                << (i.last_flash_tstep == it) << endl;
+      } 
+      fconf << endl << endl;  
     }
 
   }

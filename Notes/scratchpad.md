@@ -1,12 +1,49 @@
 # FCS Simulation
 
+
+
+# Lit Review
+
+1. Paper 1 → [Fluorescence Correlation Spectroscopy Simulations of Photophysical Phenomena and Molecular Interactions: A Molecular Dynamics/Monte Carlo Approach](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3129548/) by James A. Dix, Erik F. Y. Hom, and A. S. Verkman*
+2. 
+
+
+
 # Introduction
 
 ## FCS Technique
 
+The fluorescence signal received by the detector depends on multiple factors. The list is below:
+
+1. $p$ → polarization of light
+2. xxx
+
+Fluorescence is sensitive to environmental conditions which affect the emission of photons by the fluorophores. Thus FCS is a sensitive technique that can be used to measure:
+
++ changes in nan environment
+  + viscosity, pH, solvation
++ size and shape of molecules
++ molecular interactions
+
 ## FCS Setup
 
 ## FCS Schematics
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
