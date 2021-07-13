@@ -1,7 +1,7 @@
 # Correlators
 
 Libray that defines and implements three distinct autocorrelator modules:
-1. Linear Correlator (implemnted)
+1. Linear Correlator (implemented)
 2. Logarihmic Correlator (implementation pending)
 3. Multi-Tau Correlator (implementation pending)
 
