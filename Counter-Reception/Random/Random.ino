@@ -1,6 +1,6 @@
 #include <Entropy.h>
 const int sizex = 4;
-const double delay_us = 100;
+const double delay_us = 10000;
 const int Range_lower = 0;
 const int Range_higher = 9;
 int array[sizex];
@@ -35,6 +35,6 @@ void loop()
       
       digitalWrite(LED_BUILTIN, LOW);
       delayMicroseconds(delay_us); 
-  
+      delay(1);
   } //Infinite Loop Block
 }

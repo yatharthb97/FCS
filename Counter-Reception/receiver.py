@@ -42,7 +42,7 @@ class Receiver:
 		print(f" • Receiver → {self.Name} Created.")
 		print(f" • Temporary Filename → {self.File.name}")
 
-	def set_event_counter(self, iterations):
+	def set_down_counter(self, iterations):
 		''' Set the number of allowed iterations'''
 		#assert(iterations <= 1)
 		self.EventCounter = iterations
@@ -108,13 +108,13 @@ class Receiver:
 			    	s_string_clean = s_string.rstrip('\r\n') #Remove carriage-return character
 			    	#s_string_clean = s_string_clean.rstrip('\n') #Remove endline character
 			    	s_string_clean +='\n'
+			    	self.File.write(s_string_clean)
+			    	return True
 
 			    except UnicodeDecodeError:
 			    	self.DecodeErrors = self.DecodeErrors + 1;
 			    	self.DecodeFailureList.append(s_string)
-			    
-			    
-			    self.File.write(s_string_clean)
+		return False
 			    
 
 	def receive_vector(self):
@@ -131,13 +131,18 @@ class Receiver:
 	    		serialarray_str = s_string_clean.split(self.Sep) #Split into the array
 
 	    		self.Data = [float(numeric_string) for numeric_string in serialarray_str]
+	    		
+	    		s_string_clean +='\n'
+	    		self.File.write(s_string_clean)
+	    		return True
 
 	    	except UnicodeDecodeError:
 	    		self.DecodeErrors = self.DecodeErrors + 1
 	    		self.DecodeFailureList.append(s_string)
 
-	    		s_string_clean +='\n'
-	    		self.File.write(s_string_clean)
+	    return False
+
+
 
 	def receive_and_print(self):
 		''' Reads one vector and prints with the time reception time in milliseconds. '''
@@ -153,16 +158,19 @@ class Receiver:
 				s_string = serialdata.decode('ascii') #Decode to ASCII
 				s_string_clean = s_string.rstrip('\r\n') #Remove endline character
 				serialarray_str = s_string_clean.split(self.Sep) #Split into the array
-
+				
+				s_string_clean +='\n'
+				self.File.write(s_string_clean)
+				
 				self.Data = [float(numeric_string) for numeric_string in serialarray_str]
 				print(f" {chalk.blue(self.EventCounter)}.  {receive_time} ms → {self.Data}")
+				return True
 
 			except UnicodeDecodeError:
 				self.DecodeErrors = self.DecodeErrors + 1
 				self.DecodeFailureList.append(s_string)
 
-				s_string_clean +='\n'
-				self.File.write(s_string_clean)
+		return False
 
 	def graph_update(self, receive_fn, delay_us = 0,  no_of_calls = 1):
 		''' Calls the function and updates the graph object. '''
@@ -170,17 +178,18 @@ class Receiver:
 		iterations_left = no_of_calls
 		
 		while(iterations_left > 0):
-			receive_fn() #Call function
+			updates = receive_fn() #Call function
 			
 			#---------
-			self.ax.clear()
-			set_graph_canvas()
-			self.ax.plot(np.arange(0, len(self.Data)), self.Data)
-			plt.draw()
-			#---------
+			if(updates == True):
+				self.ax.clear()
+				set_graph_canvas()
+				self.ax.plot(np.arange(0, len(self.Data)), self.Data)
+				plt.draw()
+				#---------
 
 			iterations_left = iterations_left - 1
-			time.sleep(delay_us * 1e-6) #Sleep for given microseconds
+			#time.sleep(delay_us * 1e-6) #Sleep for given microseconds
 
 
 
