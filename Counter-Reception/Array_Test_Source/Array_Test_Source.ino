@@ -1,6 +1,6 @@
 #include <Entropy.h>
-const int sizex = 4;
-const double delay_us = 1000;
+const int sizex = 1;
+const double delay_us = 0;
 long int counter;
 int array[sizex];
 

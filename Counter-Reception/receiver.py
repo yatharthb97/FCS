@@ -32,6 +32,7 @@ class Receiver:
 		self.EventCounter = 0
 		self.Receive_Calls = 0
 		self.DecodeErrors = 0
+		self.MaxGraphSize = 20
 		self.EventsList = []
 		self.DecodeFailureList = []
 		self.Help = " > Resource List: [Name, COM, Baud, Data, EventCounter, (File.name, File) Tempfile Object]"
@@ -113,7 +114,7 @@ class Receiver:
 
 			    except UnicodeDecodeError:
 			    	self.DecodeErrors = self.DecodeErrors + 1;
-			    	self.DecodeFailureList.append(s_string)
+			    	self.DecodeFailureList.append(serialdata)
 		return False
 			    
 
@@ -138,7 +139,7 @@ class Receiver:
 
 	    	except UnicodeDecodeError:
 	    		self.DecodeErrors = self.DecodeErrors + 1
-	    		self.DecodeFailureList.append(s_string)
+	    		self.DecodeFailureList.append(serialdata)
 
 	    return False
 
@@ -168,9 +169,35 @@ class Receiver:
 
 			except UnicodeDecodeError:
 				self.DecodeErrors = self.DecodeErrors + 1
-				self.DecodeFailureList.append(s_string)
+				self.DecodeFailureList.append(serialdata)
 
 		return False
+
+
+	def receive_and_append(self):
+		''' Receives one point of data and then appends it to the Data List.'''
+		
+		self.Receive_Calls = self.Receive_Calls + 1
+		if(self.port.in_waiting > 0):
+
+			try:
+			    serialdata = self.port.readline()
+			    self.EventCounter = self.EventCounter - 1
+			    s_string = serialdata.decode('ascii')
+			    s_string_clean = s_string.rstrip('\r\n') #Remove endline character
+			    
+			    data_point = float(s_string_clean)
+			    self.Data.append(data_point)
+			    self.Data = self.Data[-self.MaxGraphSize:]
+
+			    s_string_clean +='\n'
+			    self.File.write(s_string_clean)
+			    return True
+
+			except UnicodeDecodeError:	
+				self.DecodeErrors = self.DecodeErrors + 1
+				self.DecodeFailureList.append(serialdata)
+			return False
 
 	def graph_update(self, receive_fn, delay_us = 0,  no_of_calls = 1):
 		''' Calls the function and updates the graph object. '''
@@ -203,10 +230,13 @@ class Receiver:
 		self.ax.set_title(f"`{self.Name}` Receiver - Data Graph")
 
 	def status(self):
-		print(f''' • Status: Open -> [{self.port.is_open}] - {self.Name} \n
-		           • Filename:   {self.File.name}
-		           • Events:     {self.EventsList} \n 
-		           • Exceptions: {self.DecodeErrors}
-		           •             {self.DecodeFailureList}
-		           • Total Read Attempts: {self.Receive_Calls} (Total Polling Events)
-		           • Actual Read Events:  {sum(self.EventsList)}''')
+		print(f''' 
+                   • Open -> [{self.port.is_open}] - {self.Name}
+       _,--()      • Filename:   {self.File.name}
+  ( )-'-.------|>  • Events:     {self.EventsList}
+   "     `--[]     • Exceptions: {self.DecodeErrors}
+                   •             {self.DecodeFailureList}
+      P O R T      • Total Read Attempts: {self.Receive_Calls} (Total Polling Events)
+    S T A T U S    • Actual Read Events:  {sum(self.EventsList)}''')
+					
+					

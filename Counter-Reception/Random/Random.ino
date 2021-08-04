@@ -34,7 +34,6 @@ void loop()
       //----
       
       digitalWrite(LED_BUILTIN, LOW);
-      delayMicroseconds(delay_us); 
-      delay(1);
+      delayMicroseconds(delay_us);
   } //Infinite Loop Block
 }
