@@ -1,6 +1,6 @@
 #include <Entropy.h>
 const int sizex = 4;
-const double delay_us = 10000;
+const double delay_us = 10;
 const int Range_lower = 0;
 const int Range_higher = 9;
 int array[sizex];
